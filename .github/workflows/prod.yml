@@ -1,0 +1,73 @@
+name: Build, Test #and Deploy to Prod
+
+# Trigger the workflow when changes are pushed to the main branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout code from the repository
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        path: ./auth-service-backend
+
+    - name: Checkout frontend
+      uses: actions/checkout@v4
+      with:
+        repository: ronin-code-io/auth-service-frontend
+        path: ./auth-service-frontend/
+    
+    - name: Copy assets into backend
+      working-directory: ./
+      run: |
+        mv auth-service-frontend/assets auth-service-backend
+
+      # Cache dependencies to speed up build times
+    - name: Cache dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          ./auth-service-backend/.cargo
+          ./auth-service-backend/target/
+        key: ${{ runner.os }}-cargo-${{ hashFiles('Cargo.lock') }}
+        restore-keys: ${{ runner.os }}-cargo-
+
+    - name: Install Rust
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: stable
+
+    - name: Build and test auth-service code
+      working-directory: ./auth-service-backend
+      run: |
+        cargo build --verbose
+        cargo test --verbose
+
+      # Set up Docker Buildx for multi-platform builds
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_ACCESS_TOKEN }}
+
+    - name: Build and push Docker images
+      uses: docker/bake-action@v4.5.0
+      with:
+        push: true
+        workdir: ./auth-service-backend
+        files: |
+          compose.yml
+          compose.override.yml
+        set: |
+          *.cache-from=type=gha
+          *.cache-to=type=gha,mode=max

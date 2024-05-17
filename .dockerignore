@@ -1,4 +1,7 @@
-.env
+Dockerfile
 target/
 tests/
-Dockerfile
+.git/
+.github/
+.vscode/
+.env

@@ -1,0 +1,29 @@
+services:
+  auth-service:
+    image: yoloslaw/auth-service:latest
+    restart: "always"
+    expose:
+      - "3000:3000"
+    depends_on:
+      - reverse-proxy
+    labels:
+      traefik.enable: "true"
+
+      traefik.http.middlewares.secure-mw.redirectscheme.permanent: "false"
+      traefik.http.middlewares.secure-mv.redirectscheme.scheme: "https"
+
+      traefik.http.middlewares.auth-mv.chain.middlewares: "secure-mv"
+
+      traefik.http.middlewares.strip-auth-mv.stripprefix.prefixes: "/auth"
+
+      traefik.http.routers.auth-service.entrypoints: "web"
+      traefik.http.routers.auth-service.rule: "Host(`ronin-code.io`) && PathPrefix(`/auth`)"
+      
+      traefik.http.services.auth-service.loadbalancer.server.port: "3000"
+
+      traefik.http.routers.auth-service-http.middlewares: "auth-mv"
+      traefik.http.routers.auth-service-secure.entrypoints: "websecure"
+      traefik.http.routers.auth-service-secure.rule: "Host(`ronin-code.io`) && PathPrefix(`/auth`)"
+
+      traefik.http.routers.auth-service-secure.tls: "true"
+      traefik.http.routers.auth-service-secure.middlewares: "strip-auth-mv"

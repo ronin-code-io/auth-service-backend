@@ -1,0 +1,5 @@
+version: "3.9"
+services:
+  auth-service:
+    build:
+      context: . # specify directory where local Dockerfile is located
