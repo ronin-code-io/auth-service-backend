@@ -14,7 +14,7 @@ pub struct Application {
 
 impl Application {
     pub async fn build(address: &str) -> Result<Self, Box<dyn Error>> {
-        let assets_dir = env::var("ASSETS_DIR").unwrap_or_else(|_| "/app/assets".to_owned());
+        let assets_dir = env::var("ASSETS_DIR").unwrap_or_else(|_| "assets".to_owned());
 
         let router = Router::new()
             .nest_service("/", ServeDir::new(assets_dir))

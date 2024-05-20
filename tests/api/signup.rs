@@ -35,3 +35,10 @@ async fn should_return_422_if_malformd_input() {
         );
     }
 }
+
+#[tokio::test]
+async fn should_return_201_if_valid_input() {
+    // let app = TestApp::new().await;
+
+    todo!();
+}
