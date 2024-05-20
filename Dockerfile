@@ -24,4 +24,5 @@ FROM debian:buster-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/release/auth-service /usr/local/bin
 COPY --from=builder /app/assets /app/assets
+ENV ASSETS_DIR=/app/assets
 ENTRYPOINT ["/usr/local/bin/auth-service"]

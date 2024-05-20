@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate dotenv_codegen;
+
 use std::error::Error;
 
 use axum::{routing::post, serve::Serve, Router};
@@ -14,8 +17,10 @@ pub struct Application {
 
 impl Application {
     pub async fn build(address: &str) -> Result<Self, Box<dyn Error>> {
+        let assets_dir = dotenv!("ASSETS_DIR").to_owned();
+
         let router = Router::new()
-            .nest_service("/", ServeDir::new("assets"))
+            .nest_service("/", ServeDir::new(assets_dir))
             .route("/signup", post(routes::signup))
             .route("/login", post(routes::login))
             .route("/logout", post(routes::logout))
