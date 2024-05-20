@@ -1,11 +1,15 @@
 extern crate dotenv;
 
-use dotenv::dotenv;
 use auth_service::Application;
+use dotenv::dotenv;
 
 #[tokio::main]
 async fn main() {
-    dotenv().ok();
+    match dotenv() {
+        Ok(_) => println!("Loaded env file."),
+        Err(_) => println!("Failed to load env file!"),
+    }
+
     let app = Application::build("0.0.0.0:3000")
         .await
         .expect("Failed to build app");
