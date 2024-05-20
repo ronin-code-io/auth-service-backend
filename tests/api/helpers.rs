@@ -1,6 +1,8 @@
 use auth_service::Application;
 use reqwest;
 use uuid::Uuid;
+use dotenv::dotenv;
+use std::env;
 
 pub struct TestApp {
     pub address: String,
@@ -9,7 +11,14 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        let app = Application::build("127.0.0.1:0")
+        match dotenv() {
+            Ok(_) => println!("Loaded env file."),
+            Err(_) => println!("Failed to load env file!"),
+        }
+
+        let assets_dir = env::var("ASSETS_DIR").unwrap_or_else(|_| "assets".to_owned());
+
+        let app = Application::build("127.0.0.1:0", &assets_dir)
             .await
             .expect("Failed to build test app");
 

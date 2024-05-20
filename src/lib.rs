@@ -1,4 +1,4 @@
-use std::{env, error::Error};
+use std::error::Error;
 
 use axum::{routing::post, serve::Serve, Router};
 use tower_http::services::ServeDir;
@@ -13,8 +13,8 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(address: &str) -> Result<Self, Box<dyn Error>> {
-        let assets_dir = env::var("ASSETS_DIR").unwrap_or_else(|_| "assets".to_owned());
+    pub async fn build(address: &str, assets_dir: &str) -> Result<Self, Box<dyn Error>> {
+        println!("Assets dir: {}", assets_dir);
 
         let router = Router::new()
             .nest_service("/", ServeDir::new(assets_dir))
