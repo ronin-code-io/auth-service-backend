@@ -1,8 +1,9 @@
-use auth_service::Application;
-use reqwest;
-use uuid::Uuid;
+use auth_service::{services::HashMapUserStore, AppState, Application};
 use dotenv::dotenv;
-use std::env;
+use reqwest;
+use std::{env, sync::Arc};
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,
@@ -18,7 +19,10 @@ impl TestApp {
 
         let assets_dir = env::var("ASSETS_DIR").unwrap_or_else(|_| "assets".to_owned());
 
-        let app = Application::build("127.0.0.1:0", &assets_dir)
+        let user_store = Arc::new(RwLock::new(HashMapUserStore::default()));
+        let app_state = AppState::new(user_store);
+
+        let app = Application::build(app_state, "127.0.0.1:0", &assets_dir)
             .await
             .expect("Failed to build test app");
 
