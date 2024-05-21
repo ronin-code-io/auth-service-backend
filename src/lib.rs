@@ -8,8 +8,8 @@ use axum::{
     serve::Serve,
     Json, Router,
 };
+use domain::UserStore;
 use serde::{Deserialize, Serialize};
-use services::HashMapUserStore;
 use tokio::sync::RwLock;
 use tower_http::services::ServeDir;
 
@@ -54,7 +54,7 @@ impl Application {
     }
 }
 
-pub type UserStoreType = Arc<RwLock<HashMapUserStore>>;
+pub type UserStoreType = Arc<RwLock<dyn UserStore + 'static>>;
 
 #[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
