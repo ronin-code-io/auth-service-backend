@@ -1,13 +1,5 @@
-use crate::domain::{Email, User};
+use crate::domain::{Email, User, UserStoreError};
 use std::collections::HashMap;
-
-#[derive(Debug, PartialEq)]
-pub enum UserStoreError {
-    UserAlreadyExists,
-    UserNotFound,
-    InvalidCredentials,
-    UnexpectedError,
-}
 
 #[derive(Default)]
 pub struct HashMapUserStore {

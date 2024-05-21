@@ -3,8 +3,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::{AuthApiError, User},
-    services::UserStoreError,
+    domain::{AuthApiError, User, UserStoreError},
     AppState,
 };
 
