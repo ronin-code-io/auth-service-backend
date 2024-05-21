@@ -1,4 +1,5 @@
-use crate::domain::{Email, User, UserStoreError};
+use crate::domain::{Email, User, UserStore, UserStoreError};
+use async_trait::async_trait;
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -6,9 +7,10 @@ pub struct HashMapUserStore {
     users: HashMap<Email, User>,
 }
 
-impl HashMapUserStore {
-    pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        let email: Email = format!("{}", &user.email);
+#[async_trait]
+impl UserStore for HashMapUserStore {
+    async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
+        let email: Email = format!("{}", user.email);
         match self.users.get(&email) {
             Some(_) => return Err(UserStoreError::UserAlreadyExists),
             None => {
@@ -19,14 +21,14 @@ impl HashMapUserStore {
         Ok(())
     }
 
-    pub fn get_user(self, email: &str) -> Result<User, UserStoreError> {
+    async fn get_user(self, email: &str) -> Result<User, UserStoreError> {
         match self.users.get(email) {
             Some(user) => Ok(user.clone()),
             None => Err(UserStoreError::UserNotFound),
         }
     }
 
-    pub fn validate_user(self, email: &str, password: &str) -> Result<(), UserStoreError> {
+    async fn validate_user(self, email: &str, password: &str) -> Result<(), UserStoreError> {
         match self.users.get(email) {
             Some(user) if user.password == password => Ok(()),
             Some(_) => Err(UserStoreError::InvalidCredentials),
@@ -47,7 +49,7 @@ mod tests {
             "test-password".to_owned(),
             false,
         );
-        user_service.add_user(user).expect("should add user");
+        user_service.add_user(user).await.expect("should add user");
 
         assert_eq!(user_service.users.len(), 1);
     }
@@ -63,9 +65,10 @@ mod tests {
 
         user_service
             .add_user(user.clone())
+            .await
             .expect("should add user");
         assert_eq!(
-            user_service.add_user(user).unwrap_err(),
+            user_service.add_user(user).await.unwrap_err(),
             UserStoreError::UserAlreadyExists,
         );
     }
@@ -78,9 +81,9 @@ mod tests {
             "test-password".to_owned(),
             false,
         );
-        user_service.add_user(user).expect("should add user");
+        user_service.add_user(user).await.expect("should add user");
 
-        assert!(user_service.get_user("user@example.com").is_ok());
+        assert!(user_service.get_user("user@example.com").await.is_ok());
     }
 
     #[tokio::test]
@@ -88,7 +91,7 @@ mod tests {
         let user_service = HashMapUserStore::default();
 
         assert_eq!(
-            user_service.get_user("user@example.com").unwrap_err(),
+            user_service.get_user("user@example.com").await.unwrap_err(),
             UserStoreError::UserNotFound
         );
     }
@@ -101,10 +104,11 @@ mod tests {
             "test-password".to_owned(),
             false,
         );
-        user_service.add_user(user).expect("should add user");
+        user_service.add_user(user).await.expect("should add user");
 
         assert!(user_service
             .validate_user("user@example.com", "test-password")
+            .await
             .is_ok());
     }
 
@@ -116,11 +120,12 @@ mod tests {
             "test-password".to_owned(),
             false,
         );
-        user_service.add_user(user).expect("should add user");
+        user_service.add_user(user).await.expect("should add user");
 
         assert_eq!(
             user_service
                 .validate_user("user@example.com", "invalid-password")
+                .await
                 .unwrap_err(),
             UserStoreError::InvalidCredentials
         );
@@ -133,6 +138,7 @@ mod tests {
         assert_eq!(
             user_service
                 .validate_user("user@example.com", "invalid-password")
+                .await
                 .unwrap_err(),
             UserStoreError::UserNotFound
         );
