@@ -1,5 +1,6 @@
 use std::{error::Error, sync::Arc};
 
+use crate::domain::AuthApiError;
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -7,7 +8,6 @@ use axum::{
     serve::Serve,
     Json, Router,
 };
-use domain::AuthApiError;
 use serde::{Deserialize, Serialize};
 use services::HashMapUserStore;
 use tokio::sync::RwLock;
