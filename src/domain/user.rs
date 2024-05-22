@@ -1,5 +1,4 @@
-pub type Email = String;
-pub type Password = String;
+use crate::domain::{Email, Password};
 
 #[derive(Clone, Debug)]
 pub struct User {
@@ -9,7 +8,7 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(email: String, password: String, requires_2fa: bool) -> Self {
+    pub fn new(email: Email, password: Password, requires_2fa: bool) -> Self {
         User {
             email,
             password,

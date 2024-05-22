@@ -1,9 +1,8 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
-use regex::Regex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::{AuthApiError, User, UserStoreError},
+    domain::{AuthApiError, Email, Password, User, UserStoreError},
     AppState,
 };
 
@@ -19,15 +18,10 @@ pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthApiError> {
-    let email = request.email;
-    let password = request.password;
-
-    if email.is_empty()
-        || !Regex::new(r"^\S+@\S+\.\S{2,}$").unwrap().is_match(&email)
-        || password.len() < 8
-    {
-        return Err(AuthApiError::InvalidCredentials);
-    }
+    let email =
+        Email::parse(&request.email).or_else(|_| return Err(AuthApiError::InvalidCredentials))?;
+    let password = Password::parse(&request.password)
+        .or_else(|_| return Err(AuthApiError::InvalidCredentials))?;
 
     let user = User::new(email, password, request.requires_2fa);
 

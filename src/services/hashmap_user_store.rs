@@ -1,4 +1,4 @@
-use crate::domain::{Email, User, UserStore, UserStoreError};
+use crate::domain::{Email, Password, User, UserStore, UserStoreError};
 use async_trait::async_trait;
 use std::collections::HashMap;
 
@@ -10,27 +10,26 @@ pub struct HashMapUserStore {
 #[async_trait]
 impl UserStore for HashMapUserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        let email: Email = format!("{}", user.email);
-        match self.users.get(&email) {
+        match self.users.get(&user.email) {
             Some(_) => return Err(UserStoreError::UserAlreadyExists),
             None => {
-                self.users.insert(email, user);
+                self.users.insert(user.email.clone(), user);
             }
         }
 
         Ok(())
     }
 
-    async fn get_user(self, email: &str) -> Result<User, UserStoreError> {
+    async fn get_user(self, email: &Email) -> Result<User, UserStoreError> {
         match self.users.get(email) {
             Some(user) => Ok(user.clone()),
             None => Err(UserStoreError::UserNotFound),
         }
     }
 
-    async fn validate_user(self, email: &str, password: &str) -> Result<(), UserStoreError> {
+    async fn validate_user(self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
         match self.users.get(email) {
-            Some(user) if user.password == password => Ok(()),
+            Some(user) if user.password == *password => Ok(()),
             Some(_) => Err(UserStoreError::InvalidCredentials),
             None => Err(UserStoreError::UserNotFound),
         }
@@ -44,11 +43,10 @@ mod tests {
     #[tokio::test]
     async fn should_add_user() {
         let mut user_service = HashMapUserStore::default();
-        let user = User::new(
-            "user@example.com".to_owned(),
-            "test-password".to_owned(),
-            false,
-        );
+        let email = Email::parse("user@example.com").expect("Should parse email");
+        let password = Password::parse("test-password").expect("Should parse password");
+
+        let user = User::new(email, password, false);
         user_service.add_user(user).await.expect("should add user");
 
         assert_eq!(user_service.users.len(), 1);
@@ -57,11 +55,9 @@ mod tests {
     #[tokio::test]
     async fn should_fail_to_add_duplicated_user() {
         let mut user_service = HashMapUserStore::default();
-        let user = User::new(
-            "user@example.com".to_owned(),
-            "test-password".to_owned(),
-            false,
-        );
+        let email = Email::parse("user@example.com").expect("Should parse email");
+        let password = Password::parse("test-password").expect("Should parse password");
+        let user = User::new(email, password, false);
 
         user_service
             .add_user(user.clone())
@@ -76,22 +72,22 @@ mod tests {
     #[tokio::test]
     async fn should_return_uesr() {
         let mut user_service = HashMapUserStore::default();
-        let user = User::new(
-            "user@example.com".to_owned(),
-            "test-password".to_owned(),
-            false,
-        );
+        let email = Email::parse("user@example.com").expect("Should parse email");
+        let password = Password::parse("test-password").expect("Should parse password");
+        let user = User::new(email.clone(), password, false);
+
         user_service.add_user(user).await.expect("should add user");
 
-        assert!(user_service.get_user("user@example.com").await.is_ok());
+        assert!(user_service.get_user(&email).await.is_ok());
     }
 
     #[tokio::test]
     async fn should_fail_if_user_do_not_exists() {
         let user_service = HashMapUserStore::default();
+        let email = Email::parse("user@example.com").expect("Should parse email");
 
         assert_eq!(
-            user_service.get_user("user@example.com").await.unwrap_err(),
+            user_service.get_user(&email).await.unwrap_err(),
             UserStoreError::UserNotFound
         );
     }
@@ -99,32 +95,28 @@ mod tests {
     #[tokio::test]
     async fn should_validate_password() {
         let mut user_service = HashMapUserStore::default();
-        let user = User::new(
-            "user@example.com".to_owned(),
-            "test-password".to_owned(),
-            false,
-        );
+        let email = Email::parse("user@example.com").expect("Should parse email");
+        let password = Password::parse("test-password").expect("Should parse password");
+        let user = User::new(email.clone(), password.clone(), false);
+
         user_service.add_user(user).await.expect("should add user");
 
-        assert!(user_service
-            .validate_user("user@example.com", "test-password")
-            .await
-            .is_ok());
+        assert!(user_service.validate_user(&email, &password).await.is_ok());
     }
 
     #[tokio::test]
     async fn should_fail_to_validate_password() {
         let mut user_service = HashMapUserStore::default();
-        let user = User::new(
-            "user@example.com".to_owned(),
-            "test-password".to_owned(),
-            false,
-        );
+        let email = Email::parse("user@example.com").expect("Should parse email");
+        let password = Password::parse("test-password").expect("Should parse password");
+        let wrong_password = Password::parse("wrong-password").expect("Should parse password");
+        let user = User::new(email.clone(), password, false);
+
         user_service.add_user(user).await.expect("should add user");
 
         assert_eq!(
             user_service
-                .validate_user("user@example.com", "invalid-password")
+                .validate_user(&email, &wrong_password)
                 .await
                 .unwrap_err(),
             UserStoreError::InvalidCredentials
@@ -134,10 +126,12 @@ mod tests {
     #[tokio::test]
     async fn should_fail_to_validate_password_if_user_does_not_exists() {
         let user_service = HashMapUserStore::default();
+        let email = Email::parse("user@example.com").expect("Should parse email");
+        let password = Password::parse("test-password").expect("Should parse password");
 
         assert_eq!(
             user_service
-                .validate_user("user@example.com", "invalid-password")
+                .validate_user(&email, &password)
                 .await
                 .unwrap_err(),
             UserStoreError::UserNotFound
