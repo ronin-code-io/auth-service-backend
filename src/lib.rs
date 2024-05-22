@@ -4,7 +4,7 @@ use crate::domain::AuthApiError;
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
-    routing::post,
+    routing::{delete, post},
     serve::Serve,
     Json, Router,
 };
@@ -38,6 +38,7 @@ impl Application {
             .route("/logout", post(routes::logout))
             .route("/verify-2fa", post(routes::verify_2fa))
             .route("/verify-token", post(routes::verify_token))
+            .route("/account", delete(routes::delete_account))
             .with_state(app_state);
 
         let listener = tokio::net::TcpListener::bind(address).await?;
@@ -66,6 +67,7 @@ impl IntoResponse for AuthApiError {
         let (status, error_message) = match self {
             AuthApiError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
             AuthApiError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
+            AuthApiError::UserNotFound => (StatusCode::NOT_FOUND, "User not found"),
             AuthApiError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }

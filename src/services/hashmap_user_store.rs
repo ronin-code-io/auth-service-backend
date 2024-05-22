@@ -34,6 +34,13 @@ impl UserStore for HashMapUserStore {
             None => Err(UserStoreError::UserNotFound),
         }
     }
+
+    async fn delete_user(&mut self, email: &Email) -> Result<(), UserStoreError> {
+        match self.users.remove(email) {
+            Some(_) => Ok(()),
+            None => Err(UserStoreError::UserNotFound),
+        }
+    }
 }
 
 #[cfg(test)]
