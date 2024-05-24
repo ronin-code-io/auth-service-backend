@@ -1,4 +1,4 @@
-pub enum AuthApiError {
+pub enum AuthAPIError {
     UserNotFound,
     UserAlreadyExists,
     InvalidCredentials,

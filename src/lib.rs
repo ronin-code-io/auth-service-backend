@@ -1,6 +1,6 @@
-use std::{error::Error, sync::Arc};
+use std::error::Error;
 
-use crate::domain::AuthApiError;
+use app_state::AppState;
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -8,16 +8,16 @@ use axum::{
     serve::Serve,
     Json, Router,
 };
-use domain::UserStore;
+use domain::AuthAPIError;
+use routes::{delete_account, login, logout, signup, verify_2fa, verify_token};
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
 use tower_http::services::ServeDir;
 
+pub mod app_state;
 pub mod domain;
 pub mod routes;
 pub mod services;
 
-// This struct encapsulates our application-related logic.
 pub struct Application {
     server: Serve<Router, Router>,
     pub address: String,
@@ -33,12 +33,12 @@ impl Application {
 
         let router = Router::new()
             .nest_service("/", ServeDir::new(assets_dir))
-            .route("/signup", post(routes::signup))
-            .route("/login", post(routes::login))
-            .route("/logout", post(routes::logout))
-            .route("/verify-2fa", post(routes::verify_2fa))
-            .route("/verify-token", post(routes::verify_token))
-            .route("/account", delete(routes::delete_account))
+            .route("/signup", post(signup))
+            .route("/login", post(login))
+            .route("/logout", post(logout))
+            .route("/verify-2fa", post(verify_2fa))
+            .route("/verify-token", post(verify_token))
+            .route("/account", delete(delete_account))
             .with_state(app_state);
 
         let listener = tokio::net::TcpListener::bind(address).await?;
@@ -55,20 +55,18 @@ impl Application {
     }
 }
 
-pub type UserStoreType = Arc<RwLock<dyn UserStore + 'static>>;
-
 #[derive(Serialize, Deserialize)]
 pub struct ErrorResponse {
     pub error: String,
 }
 
-impl IntoResponse for AuthApiError {
+impl IntoResponse for AuthAPIError {
     fn into_response(self) -> Response {
         let (status, error_message) = match self {
-            AuthApiError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
-            AuthApiError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
-            AuthApiError::UserNotFound => (StatusCode::NOT_FOUND, "User not found"),
-            AuthApiError::UnexpectedError => {
+            AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
+            AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
+            AuthAPIError::UserNotFound => (StatusCode::NOT_FOUND, "User not found"),
+            AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }
         };
@@ -77,16 +75,5 @@ impl IntoResponse for AuthApiError {
         });
 
         (status, body).into_response()
-    }
-}
-
-#[derive(Clone)]
-pub struct AppState {
-    pub user_store: UserStoreType,
-}
-
-impl AppState {
-    pub fn new(user_store: UserStoreType) -> Self {
-        Self { user_store }
     }
 }

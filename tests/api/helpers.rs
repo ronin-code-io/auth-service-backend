@@ -1,4 +1,4 @@
-use auth_service::{services::HashMapUserStore, AppState, Application};
+use auth_service::{app_state::AppState, services::HashMapUserStore, Application};
 use dotenv::dotenv;
 use reqwest;
 use std::{env, sync::Arc};

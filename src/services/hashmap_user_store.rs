@@ -1,5 +1,4 @@
 use crate::domain::{Email, Password, User, UserStore, UserStoreError};
-use async_trait::async_trait;
 use std::collections::HashMap;
 
 #[derive(Default)]
@@ -7,16 +6,14 @@ pub struct HashMapUserStore {
     users: HashMap<Email, User>,
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl UserStore for HashMapUserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        match self.users.get(&user.email) {
-            Some(_) => return Err(UserStoreError::UserAlreadyExists),
-            None => {
-                self.users.insert(user.email.clone(), user);
-            }
+        if self.users.contains_key(&user.email) {
+            return Err(UserStoreError::UserAlreadyExists);
         }
 
+        self.users.insert(user.email.clone(), user);
         Ok(())
     }
 
@@ -29,8 +26,13 @@ impl UserStore for HashMapUserStore {
 
     async fn validate_user(self, email: &Email, password: &Password) -> Result<(), UserStoreError> {
         match self.users.get(email) {
-            Some(user) if user.password == *password => Ok(()),
-            Some(_) => Err(UserStoreError::InvalidCredentials),
+            Some(user) => {
+                if user.password.eq(password) {
+                    Ok(())
+                } else {
+                    Err(UserStoreError::InvalidCredentials)
+                }
+            }
             None => Err(UserStoreError::UserNotFound),
         }
     }

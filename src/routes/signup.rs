@@ -2,7 +2,7 @@ use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    domain::{AuthApiError, Email, Password, User, UserStoreError},
+    domain::{AuthAPIError, Email, Password, User, UserStoreError},
     AppState,
 };
 
@@ -17,19 +17,18 @@ pub struct SignupRequest {
 pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
-) -> Result<impl IntoResponse, AuthApiError> {
-    let email =
-        Email::parse(&request.email).or_else(|_| return Err(AuthApiError::InvalidCredentials))?;
-    let password = Password::parse(&request.password)
-        .or_else(|_| return Err(AuthApiError::InvalidCredentials))?;
+) -> Result<impl IntoResponse, AuthAPIError> {
+    let email = Email::parse(&request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let password =
+        Password::parse(&request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     let user = User::new(email, password, request.requires_2fa);
 
     let mut user_store = state.user_store.write().await;
 
     match user_store.add_user(user).await {
-        Err(UserStoreError::UserAlreadyExists) => return Err(AuthApiError::UserAlreadyExists),
-        Err(_) => return Err(AuthApiError::UnexpectedError),
+        Err(UserStoreError::UserAlreadyExists) => return Err(AuthAPIError::UserAlreadyExists),
+        Err(_) => return Err(AuthAPIError::UnexpectedError),
         Ok(_) => (),
     };
 
