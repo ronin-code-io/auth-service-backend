@@ -66,6 +66,9 @@ impl IntoResponse for AuthAPIError {
             AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
             AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
             AuthAPIError::UserNotFound => (StatusCode::NOT_FOUND, "User not found"),
+            AuthAPIError::IncorrectCredentials => {
+                (StatusCode::UNAUTHORIZED, "Incorrect credentials")
+            }
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }

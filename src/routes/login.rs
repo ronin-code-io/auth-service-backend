@@ -20,11 +20,11 @@ pub async fn login(
     let password =
         Password::parse(&request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
-    let user_store = state.user_store.read().await;
+    let user_store = &state.user_store.read().await;
 
     match user_store.validate_user(&email, &password).await {
         Ok(()) => (),
-        Err(_) => return Err(AuthAPIError::InvalidCredentials),
+        Err(_) => return Err(AuthAPIError::IncorrectCredentials),
     };
 
     Ok(StatusCode::OK.into_response())
