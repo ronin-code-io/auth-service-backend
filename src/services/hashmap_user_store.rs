@@ -83,7 +83,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn should_return_uesr() {
+    async fn should_return_user() {
         let mut user_service = HashMapUserStore::default();
         let email = Email::parse("user@example.com").expect("Should parse email");
         let password = Password::parse("test-password").expect("Should parse password");

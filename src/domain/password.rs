@@ -6,7 +6,7 @@ impl Password {
         if password.len() >= 8 {
             Ok(Password(String::from(password)))
         } else {
-            Err(format!("Invalid password.",))
+            Err("Invalid password.".to_owned())
         }
     }
 }

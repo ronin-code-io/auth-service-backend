@@ -17,6 +17,9 @@ pub mod app_state;
 pub mod domain;
 pub mod routes;
 pub mod services;
+pub mod utils;
+
+use utils::ASSETS_DIR;
 
 pub struct Application {
     server: Serve<Router, Router>,
@@ -24,12 +27,8 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(
-        app_state: AppState,
-        address: &str,
-        assets_dir: &str,
-    ) -> Result<Self, Box<dyn Error>> {
-        println!("Assets dir: {}", assets_dir);
+    pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
+        let assets_dir = ASSETS_DIR.as_str();
 
         let router = Router::new()
             .nest_service("/", ServeDir::new(assets_dir))

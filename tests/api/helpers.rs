@@ -1,7 +1,6 @@
 use auth_service::{app_state::AppState, services::HashMapUserStore, Application};
-use dotenv::dotenv;
 use reqwest;
-use std::{env, sync::Arc};
+use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 
@@ -12,17 +11,10 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        match dotenv() {
-            Ok(_) => println!("Loaded env file."),
-            Err(_) => println!("Failed to load env file!"),
-        }
-
-        let assets_dir = env::var("ASSETS_DIR").unwrap_or_else(|_| "assets".to_owned());
-
         let user_store = Arc::new(RwLock::new(HashMapUserStore::default()));
         let app_state = AppState::new(user_store);
 
-        let app = Application::build(app_state, "127.0.0.1:0", &assets_dir)
+        let app = Application::build(app_state, "127.0.0.1:0")
             .await
             .expect("Failed to build test app");
 

@@ -1,6 +1,6 @@
 use std::borrow::Borrow;
 
-use auth_service::ErrorResponse;
+use auth_service::{utils::JWT_COOKIE_NAME, ErrorResponse};
 use serde_json::json;
 
 use crate::helpers::{get_random_email, TestApp};
@@ -107,31 +107,35 @@ async fn should_return_401_if_incorrect_credentials() {
 }
 
 #[tokio::test]
-async fn login_returns_200() {
-    let known_email = "test@e.mail";
-    let password = "strong_password";
-
+async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     let app = TestApp::new().await;
 
-    app.post_signup(
-        json!({
-            "email": known_email,
-            "password": password,
-            "requires2FA": false
-        })
-        .borrow(),
-    )
-    .await;
+    let random_email = get_random_email();
+    let password = "strong_password";
 
-    let response = app
-        .post_login(
-            json!({
-                "email": known_email,
-                "password": password,
-            })
-            .borrow(),
-        )
-        .await;
+    let signup_body = json!({
+        "email": random_email,
+        "password": password,
+        "requires2FA": false,
+    });
+
+    let response = app.post_signup(&signup_body).await;
+
+    assert_eq!(response.status().as_u16(), 201);
+
+    let login_body = json!({
+        "email": random_email,
+        "password": password,
+    });
+
+    let response = app.post_login(&login_body).await;
 
     assert_eq!(response.status().as_u16(), 200);
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie found");
+
+    assert!(!auth_cookie.value().is_empty());
 }
