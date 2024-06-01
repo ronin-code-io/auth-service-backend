@@ -16,7 +16,7 @@ impl BannedTokenStore for HashSetBannedTokenStore {
         }
     }
 
-    async fn is_token_banned(self, token: &str) -> Result<bool, BannedTokenStoreError> {
+    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
         Ok(self.banned_tokens.contains(token))
     }
 }
@@ -30,7 +30,7 @@ mod test {
         let banned_token_store = HashSetBannedTokenStore::default();
 
         let result = banned_token_store
-            .is_token_banned("Unknown")
+            .contains_token("Unknown")
             .await
             .expect("Could not check banned token");
 
@@ -44,6 +44,6 @@ mod test {
 
         assert!(banned_token_store.add_token(token.clone()).await.is_ok());
 
-        assert!(banned_token_store.is_token_banned(&token).await.is_ok());
+        assert!(banned_token_store.contains_token(&token).await.is_ok());
     }
 }
