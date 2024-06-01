@@ -8,6 +8,11 @@ pub enum UserStoreError {
     UnexpectedError,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum BannedTokenStoreError {
+    UnexpectedError,
+}
+
 #[async_trait::async_trait]
 pub trait UserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError>;
@@ -15,4 +20,10 @@ pub trait UserStore {
     async fn validate_user(&self, email: &Email, password: &Password)
         -> Result<(), UserStoreError>;
     async fn delete_user(&mut self, email: &Email) -> Result<(), UserStoreError>;
+}
+
+#[async_trait::async_trait]
+pub trait BannedTokenStore {
+    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError>;
+    async fn is_token_banned(self, token: &str) -> Result<bool, BannedTokenStoreError>;
 }
