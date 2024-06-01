@@ -22,8 +22,8 @@ pub async fn logout(jar: CookieJar) -> (CookieJar, Result<impl IntoResponse, Aut
         return (jar, Err(AuthAPIError::InvalidToken));
     }
 
-    let static_cookie = Cookie::new(JWT_COOKIE_NAME, cookie.to_string());
-    let updated_jar = jar.remove(static_cookie);
+    let static_cookie = Cookie::from(JWT_COOKIE_NAME);
+    let jar = jar.remove(static_cookie);
 
-    (updated_jar, Ok(StatusCode::OK.into_response()))
+    (jar, Ok(StatusCode::OK.into_response()))
 }

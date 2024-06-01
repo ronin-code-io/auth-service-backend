@@ -2,7 +2,7 @@ use std::error::Error;
 
 use app_state::AppState;
 use axum::{
-    http::{StatusCode, Method},
+    http::{Method, StatusCode},
     response::{IntoResponse, Response},
     routing::{delete, post},
     serve::Serve,
