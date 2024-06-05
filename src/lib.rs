@@ -31,6 +31,8 @@ impl Application {
         let assets_dir = ASSETS_DIR.as_str();
         let allowed_origins = [
             "http://localhost".parse()?,
+            "http://ronin-code.io".parse()?,
+            "https://localhost".parse()?,
             "https://ronin-code.io".parse()?,
         ];
 
