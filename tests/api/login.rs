@@ -1,7 +1,7 @@
-use std::borrow::Borrow;
-
+use auth_service::domain::{Email, TwoFACodeStore};
 use auth_service::{routes::TwoFactorAuthResponse, utils::JWT_COOKIE_NAME, ErrorResponse};
 use serde_json::json;
+use std::borrow::Borrow;
 
 use crate::helpers::{get_random_email, TestApp};
 
@@ -152,9 +152,9 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         "password": password,
         "requires2FA": true,
     });
-    
+
     let response = app.post_signup(&signup_body).await;
-    
+
     assert_eq!(response.status().as_u16(), 201);
 
     let login_body = json!({
@@ -174,4 +174,13 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     assert_eq!(response_body.message, "2FA required");
 
     assert!(!response_body.login_attempt_id.is_empty());
+
+    let email = Email::parse(&random_email).expect("Could not parse email.");
+
+    let contains_code = app.two_fa_code_store.read().await.get_code(&email).await;
+
+    assert!(
+        contains_code.is_ok(),
+        "2FA store should contain code and attempt id."
+    );
 }
