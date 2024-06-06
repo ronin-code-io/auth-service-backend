@@ -1,6 +1,6 @@
 use rand::Rng;
 
-use super::{Email, Password, User};
+use super::{AuthAPIError, Email, Password, User};
 
 #[derive(Debug, PartialEq)]
 pub enum UserStoreError {
@@ -42,6 +42,13 @@ pub struct LoginAttemptId(String);
 impl LoginAttemptId {
     pub fn default() -> Self {
         LoginAttemptId(uuid::Uuid::new_v4().to_string())
+    }
+
+    pub fn parse(id: &str) -> Result<Self, AuthAPIError> {
+        match uuid::Uuid::parse_str(id) {
+            Ok(id) => Ok(Self(id.to_string())),
+            Err(_) => Err(AuthAPIError::InvalidCredentials),
+        }
     }
 }
 
