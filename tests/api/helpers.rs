@@ -1,6 +1,7 @@
 use auth_service::{
     app_state::AppState,
-    services::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore},
+    domain::EmailClient,
+    services::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore, MockEmailClient},
     utils::test,
     Application,
 };
@@ -15,6 +16,7 @@ pub struct TestApp {
     pub http_client: reqwest::Client,
     pub banned_token_store: Arc<RwLock<HashSetBannedTokenStore>>,
     pub two_fa_code_store: Arc<RwLock<HashMapTwoFACodeStore>>,
+    pub email_client: Arc<RwLock<dyn EmailClient>>,
 }
 
 impl TestApp {
@@ -22,11 +24,13 @@ impl TestApp {
         let user_store = Arc::new(RwLock::new(HashMapUserStore::default()));
         let banned_token_store = Arc::new(RwLock::new(HashSetBannedTokenStore::default()));
         let two_fa_code_store = Arc::new(RwLock::new(HashMapTwoFACodeStore::default()));
+        let email_client = Arc::new(RwLock::new(MockEmailClient {}));
 
         let app_state = AppState::new(
             user_store,
             banned_token_store.clone(),
             two_fa_code_store.clone(),
+            email_client.clone(),
         );
 
         let cookie_jar = Arc::new(Jar::default());
@@ -52,6 +56,7 @@ impl TestApp {
             http_client,
             banned_token_store,
             two_fa_code_store,
+            email_client,
         }
     }
 

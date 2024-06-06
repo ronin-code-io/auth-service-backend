@@ -93,21 +93,27 @@ async fn handle_2fa(
     let code = TwoFACode::default();
     let login_attempt_id = LoginAttemptId::default();
 
-    println!(
-        "Login {:?} with {:?} for {:?}",
-        login_attempt_id, code, email
-    );
-
     if state
         .two_fa_code_store
         .write()
         .await
-        .add_code(email.clone(), login_attempt_id.clone(), code)
+        .add_code(email.clone(), login_attempt_id.clone(), code.clone())
         .await
         .is_err()
     {
         return (jar, Err(AuthAPIError::UnexpectedError));
     }
+
+    if state
+        .email_client
+        .read()
+        .await
+        .send_email(email, "2FA code", code.as_ref())
+        .await
+        .is_err()
+    {
+        return (jar, Err(AuthAPIError::UnexpectedError));
+    };
 
     let response = TwoFactorAuthResponse {
         message: "2FA required".to_owned(),
