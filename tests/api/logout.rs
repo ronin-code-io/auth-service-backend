@@ -1,5 +1,4 @@
 use crate::helpers::get_random_email;
-use auth_service::domain::BannedTokenStore;
 use auth_service::{
     domain::Email,
     utils::{constants::JWT_COOKIE_NAME, generate_auth_cookie},

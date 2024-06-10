@@ -1,4 +1,4 @@
-use auth_service::domain::{Email, TwoFACodeStore};
+use auth_service::domain::Email;
 use auth_service::{routes::TwoFactorAuthResponse, utils::JWT_COOKIE_NAME, ErrorResponse};
 use serde_json::json;
 use std::borrow::Borrow;
