@@ -2,6 +2,7 @@ use crate::helpers::{get_random_email, TestApp};
 use auth_service::{
     domain::{Email, LoginAttemptId, TwoFACode},
     routes::TwoFactorAuthResponse,
+    utils::JWT_COOKIE_NAME,
     ErrorResponse,
 };
 use serde_json::json;
@@ -158,7 +159,7 @@ async fn should_return_401_if_incorrect_credentials() {
                 .await
                 .expect("Could not deserialize response body to ErrorResponse")
                 .error,
-            "Invalid credentials".to_owned()
+            "Incorrect credentials".to_owned()
         );
     }
 }
@@ -228,6 +229,62 @@ async fn should_return_401_if_old_code() {
             .await
             .expect("Could not deserialize response body to ErrorResponse")
             .error,
-        "Invalid credentials".to_owned()
+        "Incorrect credentials".to_owned()
     );
+}
+
+#[tokio::test]
+async fn should_return_200_if_correct_code() {
+    let app = TestApp::new().await;
+
+    let email = Email::parse(&get_random_email()).expect("Could not parse email");
+    let password = "TesPassword";
+
+    let response = app
+        .post_signup(&json!({
+            "email": email.as_ref(),
+            "password": password,
+            "requires2FA": true,
+        }))
+        .await;
+
+    assert_eq!(response.status().as_u16(), 201);
+
+    let login_attempt_id = app
+        .post_login(&json!({
+            "email": email.as_ref(),
+            "password": password,
+
+        }))
+        .await
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to LoginAttemptIdResponse")
+        .login_attempt_id;
+
+    let code = app
+        .two_fa_code_store
+        .read()
+        .await
+        .get_code(&email)
+        .await
+        .expect("Could not obtain code from app state")
+        .1;
+
+    let response = app
+        .post_verify_2fa(&json!({
+            "email": email.as_ref(),
+            "loginAttemptId": login_attempt_id,
+            "2FACode": code.as_ref(),
+        }))
+        .await;
+
+    assert_eq!(response.status().as_u16(), 200, "Verify request fails");
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie found");
+
+    assert!(!auth_cookie.value().is_empty());
 }
