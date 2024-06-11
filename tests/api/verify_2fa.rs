@@ -288,3 +288,82 @@ async fn should_return_200_if_correct_code() {
 
     assert!(!auth_cookie.value().is_empty());
 }
+
+#[tokio::test]
+async fn should_return_401_if_correct_code_used_twice() {
+    let app = TestApp::new().await;
+
+    let email = Email::parse(&get_random_email()).expect("Could not parse email");
+    let password = "TesPassword";
+
+    let response = app
+        .post_signup(&json!({
+            "email": email.as_ref(),
+            "password": password,
+            "requires2FA": true,
+        }))
+        .await;
+
+    assert_eq!(response.status().as_u16(), 201);
+
+    let login_attempt_id = app
+        .post_login(&json!({
+            "email": email.as_ref(),
+            "password": password,
+
+        }))
+        .await
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to LoginAttemptIdResponse")
+        .login_attempt_id;
+
+    let code = app
+        .two_fa_code_store
+        .read()
+        .await
+        .get_code(&email)
+        .await
+        .expect("Could not obtain code from app state")
+        .1;
+
+    let response = app
+        .post_verify_2fa(&json!({
+            "email": email.as_ref(),
+            "loginAttemptId": login_attempt_id,
+            "2FACode": code.as_ref(),
+        }))
+        .await;
+
+    assert_eq!(response.status().as_u16(), 200, "Verify request fails");
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie found");
+
+    assert!(!auth_cookie.value().is_empty());
+
+    let response = app
+        .post_verify_2fa(&json!({
+            "email": email.as_ref(),
+            "2FACode": code.as_ref(),
+            "loginAttemptId": login_attempt_id,
+        }))
+        .await;
+
+    assert_eq!(
+        response.status().as_u16(),
+        401,
+        "Failed to refuse old code verification."
+    );
+
+    assert_eq!(
+        response
+            .json::<ErrorResponse>()
+            .await
+            .expect("Could not deserialize response body to ErrorResponse")
+            .error,
+        "Incorrect credentials".to_owned()
+    );
+}

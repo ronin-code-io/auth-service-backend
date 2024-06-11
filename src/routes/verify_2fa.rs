@@ -33,7 +33,7 @@ pub async fn verify_2fa(
     let two_fa_code = two_fa_code.unwrap();
     let login_attempt_id = login_attempt_id.unwrap();
 
-    let two_fa_code_store = state.two_fa_code_store.write().await;
+    let mut two_fa_code_store = state.two_fa_code_store.write().await;
 
     match two_fa_code_store.get_code(&email).await {
         Ok((stored_login_attempt_id, stored_two_fa_code)) => {
@@ -43,9 +43,9 @@ pub async fn verify_2fa(
 
             let cookie = generate_auth_cookie(&email);
 
-            if cookie.is_err() {
+            if cookie.is_err() || two_fa_code_store.remove_code(&email).await.is_err() {
                 return (jar, Err(AuthAPIError::UnexpectedError));
-            }
+            };
 
             let updated_jar = jar.add(cookie.unwrap());
 
