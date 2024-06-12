@@ -6,6 +6,7 @@ lazy_static! {
     pub static ref JWT_SECRET: String = set_token();
     pub static ref ASSETS_DIR: String = set_assets_dir();
     pub static ref POSTGRES_PASSWORD: String = set_postgres_password();
+    pub static ref DATABASE_URL: String = set_database_url();
 }
 
 fn load_env_file() {
@@ -49,10 +50,22 @@ fn set_postgres_password() -> String {
     postgres_password
 }
 
+fn set_database_url() -> String {
+    load_env_file();
+    let db_url = std_env::var(env::DATABASE_URL_ENV_VAR).unwrap_or_else(|_| {
+        panic!(
+            "{} environment variable must be set.",
+            env::DATABASE_URL_ENV_VAR
+        )
+    });
+    db_url
+}
+
 pub mod env {
     pub const JWT_SECRET_ENV_VAR: &str = "JWT_SECRET";
     pub const ASSETS_DIR_ENV_VAR: &str = "ASSETS_DIR";
     pub const POSTGRES_PASSWORD_ENV_VAR: &str = "POSTGRES_PASSWORD";
+    pub const DATABASE_URL_ENV_VAR: &str = "DATABASE_URL";
 }
 
 pub mod prod {
