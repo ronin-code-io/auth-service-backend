@@ -2,10 +2,12 @@ extern crate dotenv;
 
 use auth_service::{
     app_state::AppState,
+    get_postgres_pol,
     services::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore, MockEmailClient},
-    utils::prod,
+    utils::{prod, DATABASE_URL},
     Application,
 };
+use sqlx::PgPool;
 use std::sync::Arc;
 
 use tokio::sync::RwLock;
@@ -16,6 +18,7 @@ async fn main() {
     let banned_token_store = Arc::new(RwLock::new(HashSetBannedTokenStore::default()));
     let two_fa_code_store = Arc::new(RwLock::new(HashMapTwoFACodeStore::default()));
     let email_client = Arc::new(RwLock::new(MockEmailClient {}));
+    let pg_pol = configure_postgres().await;
 
     let app_state = AppState::new(
         user_store,
@@ -29,4 +32,17 @@ async fn main() {
         .expect("Failed to build app");
 
     app.run().await.expect("Failed to run app");
+}
+
+async fn configure_postgres() -> PgPool {
+    let pg_pool = get_postgres_pol(&DATABASE_URL)
+        .await
+        .expect("Failed to create Postgres connection pool!");
+
+    sqlx::migrate!()
+        .run(&pg_pool)
+        .await
+        .expect("Failed to run database migrations!");
+
+    pg_pool
 }

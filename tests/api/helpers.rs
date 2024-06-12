@@ -138,5 +138,5 @@ impl TestApp {
 }
 
 pub fn get_random_email() -> String {
-    format!("{}@example.com", Uuid::new_v4()).replace("-", "")
+    format!("{}@example.com", Uuid::new_v4()).replace('-', "")
 }

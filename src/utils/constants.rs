@@ -41,24 +41,22 @@ fn set_assets_dir() -> String {
 
 fn set_postgres_password() -> String {
     load_env_file();
-    let postgres_password = std_env::var(env::POSTGRES_PASSWORD_ENV_VAR).unwrap_or_else(|_| {
+    std_env::var(env::POSTGRES_PASSWORD_ENV_VAR).unwrap_or_else(|_| {
         panic!(
             "{} environment variable must be set.",
             env::POSTGRES_PASSWORD_ENV_VAR
         )
-    });
-    postgres_password
+    })
 }
 
 fn set_database_url() -> String {
     load_env_file();
-    let db_url = std_env::var(env::DATABASE_URL_ENV_VAR).unwrap_or_else(|_| {
+    std_env::var(env::DATABASE_URL_ENV_VAR).unwrap_or_else(|_| {
         panic!(
             "{} environment variable must be set.",
             env::DATABASE_URL_ENV_VAR
         )
-    });
-    db_url
+    })
 }
 
 pub mod env {
