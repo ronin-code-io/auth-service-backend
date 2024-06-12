@@ -49,7 +49,7 @@ pub async fn verify_2fa(
 
             let updated_jar = jar.add(cookie.unwrap());
 
-            return (updated_jar, Ok(StatusCode::OK.into_response()));
+            (updated_jar, Ok(StatusCode::OK.into_response()))
         }
         Err(TwoFACodeStoreError::LoginAttemptIdNotFound) => {
             (jar, Err(AuthAPIError::IncorrectCredentials))

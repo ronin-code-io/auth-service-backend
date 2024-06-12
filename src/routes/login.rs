@@ -68,7 +68,7 @@ async fn handle_no_2fa(
     CookieJar,
     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
 ) {
-    let auth_cookie = generate_auth_cookie(&email);
+    let auth_cookie = generate_auth_cookie(email);
 
     if auth_cookie.is_err() {
         return (jar, Err(AuthAPIError::UnexpectedError));

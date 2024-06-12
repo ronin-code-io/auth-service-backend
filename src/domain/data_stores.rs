@@ -39,11 +39,13 @@ pub enum TwoFACodeStoreError {
 #[derive(Debug, Clone, PartialEq)]
 pub struct LoginAttemptId(String);
 
-impl LoginAttemptId {
-    pub fn default() -> Self {
+impl Default for LoginAttemptId {
+    fn default() -> Self {
         LoginAttemptId(uuid::Uuid::new_v4().to_string())
     }
+}
 
+impl LoginAttemptId {
     pub fn parse(id: &str) -> Result<Self, AuthAPIError> {
         match uuid::Uuid::parse_str(id) {
             Ok(id) => Ok(Self(id.to_string())),
