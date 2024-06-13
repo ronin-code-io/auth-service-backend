@@ -1,7 +1,10 @@
 use auth_service::{
     app_state::AppState,
     domain::{BannedTokenStore, EmailClient, TwoFACodeStore},
-    services::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore, MockEmailClient},
+    services::{
+        data_stores::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore},
+        MockEmailClient,
+    },
     utils::test,
     Application,
 };
