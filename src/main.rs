@@ -3,7 +3,10 @@ extern crate dotenv;
 use auth_service::{
     app_state::AppState,
     get_postgres_pol,
-    services::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore, MockEmailClient},
+    services::{
+        data_stores::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore},
+        MockEmailClient,
+    },
     utils::{prod, DATABASE_URL},
     Application,
 };
@@ -18,7 +21,7 @@ async fn main() {
     let banned_token_store = Arc::new(RwLock::new(HashSetBannedTokenStore::default()));
     let two_fa_code_store = Arc::new(RwLock::new(HashMapTwoFACodeStore::default()));
     let email_client = Arc::new(RwLock::new(MockEmailClient {}));
-    let pg_pol = configure_postgres().await;
+    let _pg_pol = configure_postgres().await;
 
     let app_state = AppState::new(
         user_store,
