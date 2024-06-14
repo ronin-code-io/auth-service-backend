@@ -2,10 +2,10 @@ extern crate dotenv;
 
 use auth_service::{
     app_state::AppState,
-    get_postgres_pol,
+    get_postgres_pool,
     services::{
-        data_stores::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore},
-        MockEmailClient,
+        data_stores::{HashMapTwoFACodeStore, HashSetBannedTokenStore},
+        MockEmailClient, PostgresUserStore,
     },
     utils::{prod, DATABASE_URL},
     Application,
@@ -17,11 +17,12 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
-    let user_store = Arc::new(RwLock::new(HashMapUserStore::default()));
+    let pg_pol = configure_postgres().await;
+
+    let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pol)));
     let banned_token_store = Arc::new(RwLock::new(HashSetBannedTokenStore::default()));
     let two_fa_code_store = Arc::new(RwLock::new(HashMapTwoFACodeStore::default()));
     let email_client = Arc::new(RwLock::new(MockEmailClient {}));
-    let _pg_pol = configure_postgres().await;
 
     let app_state = AppState::new(
         user_store,
@@ -38,7 +39,7 @@ async fn main() {
 }
 
 async fn configure_postgres() -> PgPool {
-    let pg_pool = get_postgres_pol(&DATABASE_URL)
+    let pg_pool = get_postgres_pool(&DATABASE_URL)
         .await
         .expect("Failed to create Postgres connection pool!");
 
