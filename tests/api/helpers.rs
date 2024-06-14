@@ -1,14 +1,16 @@
 use auth_service::{
     app_state::AppState,
     domain::{BannedTokenStore, EmailClient, TwoFACodeStore},
+    get_postgres_pool,
     services::{
-        data_stores::{HashMapTwoFACodeStore, HashMapUserStore, HashSetBannedTokenStore},
-        MockEmailClient,
+        data_stores::{HashMapTwoFACodeStore, HashSetBannedTokenStore},
+        MockEmailClient, PostgresUserStore,
     },
-    utils::test,
+    utils::{test, DATABASE_URL},
     Application,
 };
 use reqwest::cookie::Jar;
+use sqlx::{postgres::PgPoolOptions, Executor, PgPool};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
@@ -24,7 +26,10 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        let user_store = Arc::new(RwLock::new(HashMapUserStore::default()));
+        // TODO: Add test container runtime
+        let pg_pool = configure_postgresql().await;
+
+        let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
         let banned_token_store = Arc::new(RwLock::new(HashSetBannedTokenStore::default()));
         let two_fa_code_store = Arc::new(RwLock::new(HashMapTwoFACodeStore::default()));
         let email_client = Arc::new(RwLock::new(MockEmailClient {}));
@@ -138,6 +143,43 @@ impl TestApp {
             .await
             .expect("Fail to send delete account request.")
     }
+}
+
+async fn configure_postgresql() -> PgPool {
+    let postgresql_conn_url = DATABASE_URL.to_owned();
+    let db_name = format!("{}_test", Uuid::new_v4());
+
+    configure_database(&postgresql_conn_url, &db_name).await;
+
+    let postgresql_conn_url_with_db = format!("{}/{}", postgresql_conn_url, db_name);
+
+    get_postgres_pool(&postgresql_conn_url_with_db)
+        .await
+        .expect("Failed to create Postgres connection pool!")
+}
+
+async fn configure_database(db_conn_string: &str, db_name: &str) {
+    let connection = PgPoolOptions::new()
+        .connect(db_conn_string)
+        .await
+        .expect("Failed to create Postgres connection pool.");
+
+    connection
+        .execute(format!(r#"CREATE DATABASE "{}";"#, db_name).as_str())
+        .await
+        .expect("Failed to create database.");
+
+    let db_conn_string = format!("{}/{}", db_conn_string, db_name);
+
+    let connection = PgPoolOptions::new()
+        .connect(&db_conn_string)
+        .await
+        .expect("Failed to create Postgres connection pool.");
+
+    sqlx::migrate!()
+        .run(&connection)
+        .await
+        .expect("Failed to migrate database.");
 }
 
 pub fn get_random_email() -> String {

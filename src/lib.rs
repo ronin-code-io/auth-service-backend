@@ -95,6 +95,6 @@ impl IntoResponse for AuthAPIError {
     }
 }
 
-pub async fn get_postgres_pol(url: &str) -> Result<PgPool, sqlx::Error> {
+pub async fn get_postgres_pool(url: &str) -> Result<PgPool, sqlx::Error> {
     PgPoolOptions::new().max_connections(5).connect(url).await
 }
