@@ -8,10 +8,23 @@ on:
   repository_dispatch:
     types: [trigger-build]
 
+env:
+  SQLX_OFFLINE: true
+
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15.2-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
 
     steps:
       # Checkout code from the repository
@@ -51,6 +64,7 @@ jobs:
       working-directory: ./auth-service-backend
       run: |
         export JWT_SECRET=secret
+        export DATABASE_URL=postgres://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432
         cargo build --verbose
         cargo test --verbose
 
