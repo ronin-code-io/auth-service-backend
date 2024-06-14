@@ -89,7 +89,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     let banned_token_store = app.banned_token_store.clone();
     let contains_token = banned_token_store
-        .read()
+        .write()
         .await
         .contains_token(token)
         .await
