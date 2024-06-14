@@ -4,7 +4,7 @@ use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
 async fn should_return_204_if_valid_input_and_user_is_deleted() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = get_random_email();
 
@@ -33,11 +33,13 @@ async fn should_return_204_if_valid_input_and_user_is_deleted() {
         "Failed for input {:?}",
         email
     );
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_404_if_user_not_found() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let email = get_random_email();
     let delete_payload = serde_json::json!({"email": email}).take();
 
@@ -58,11 +60,13 @@ async fn should_return_404_if_user_not_found() {
             .error,
         "User not found".to_owned()
     );
+
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_email_is_malformed() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
     let delete_payload = serde_json::json!({"email": "wrong-email"}).take();
 
     let delete_response = app.delete_account(&delete_payload).await;
@@ -82,4 +86,5 @@ async fn should_return_400_if_email_is_malformed() {
             .error,
         "Invalid credentials".to_owned()
     );
+    app.clean_up().await;
 }

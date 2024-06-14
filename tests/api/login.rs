@@ -7,7 +7,7 @@ use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let credentials = json!({
         "incorrect": "credentials",
@@ -15,11 +15,12 @@ async fn should_return_422_if_malformed_credentials() {
     let response = app.post_login(&credentials).await;
 
     assert_eq!(response.status().as_u16(), 422);
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let test_cases = [
         json!({
@@ -50,13 +51,14 @@ async fn should_return_400_if_invalid_input() {
             "Invalid credentials".to_owned()
         )
     }
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
     let known_email = "test@e.mail";
 
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     app.post_signup(
         json!({
@@ -104,11 +106,12 @@ async fn should_return_401_if_incorrect_credentials() {
         .borrow(),
     )
     .await;
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
     let password = "strong_password";
@@ -138,11 +141,12 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
     let password = "strong_password";
@@ -183,4 +187,5 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         contains_code.is_ok(),
         "2FA store should contain code and attempt id."
     );
+    app.clean_up().await;
 }

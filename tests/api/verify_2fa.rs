@@ -9,7 +9,7 @@ use serde_json::json;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let test_cases = [
         json!({}),
@@ -40,11 +40,12 @@ async fn should_return_422_if_malformed_input() {
             test_case,
         );
     }
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let test_cases = [
         json!({
@@ -84,11 +85,12 @@ async fn should_return_400_if_invalid_input() {
             test_case,
         );
     }
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = Email::parse(&get_random_email()).expect("Failed to parse random email");
     let password = "TestPassword";
@@ -162,11 +164,12 @@ async fn should_return_401_if_incorrect_credentials() {
             "Incorrect credentials".to_owned()
         );
     }
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_old_code() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = Email::parse(&get_random_email()).expect("Failed to parse random email");
     let password = "TestPassword";
@@ -231,11 +234,12 @@ async fn should_return_401_if_old_code() {
             .error,
         "Incorrect credentials".to_owned()
     );
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_200_if_correct_code() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = Email::parse(&get_random_email()).expect("Could not parse email");
     let password = "TesPassword";
@@ -287,11 +291,12 @@ async fn should_return_200_if_correct_code() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_correct_code_used_twice() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = Email::parse(&get_random_email()).expect("Could not parse email");
     let password = "TesPassword";
@@ -366,4 +371,5 @@ async fn should_return_401_if_correct_code_used_twice() {
             .error,
         "Incorrect credentials".to_owned()
     );
+    app.clean_up().await;
 }

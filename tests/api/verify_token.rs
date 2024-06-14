@@ -5,7 +5,7 @@ use crate::helpers::{get_random_email, TestApp};
 
 #[tokio::test]
 async fn should_return_401_if_invalid_token() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let test_cases = [
         json!({
@@ -37,11 +37,12 @@ async fn should_return_401_if_invalid_token() {
             test_case
         );
     }
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_401_if_banned_token() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
     let password = "password";
@@ -94,11 +95,12 @@ async fn should_return_401_if_banned_token() {
             .error,
         "Invalid auth token".to_owned()
     );
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_422_if_invalid_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let test_cases = [
         json!({
@@ -122,11 +124,12 @@ async fn should_return_422_if_invalid_input() {
             test_case,
         );
     }
+    app.clean_up().await;
 }
 
 #[tokio::test]
 async fn should_return_200_if_valid_token() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = get_random_email();
     let signup_body = json!({
@@ -158,5 +161,6 @@ async fn should_return_200_if_valid_token() {
         }))
         .await;
 
-    assert_eq!(response.status().as_u16(), 200)
+    assert_eq!(response.status().as_u16(), 200);
+    app.clean_up().await;
 }
