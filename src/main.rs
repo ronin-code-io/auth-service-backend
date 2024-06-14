@@ -2,12 +2,12 @@ extern crate dotenv;
 
 use auth_service::{
     app_state::AppState,
-    get_postgres_pool,
+    get_postgres_pool, get_redis_client,
     services::{
         data_stores::{HashMapTwoFACodeStore, HashSetBannedTokenStore},
         MockEmailClient, PostgresUserStore,
     },
-    utils::{prod, DATABASE_URL},
+    utils::{prod, DATABASE_URL, REDIS_HOSTNAME},
     Application,
 };
 use sqlx::PgPool;
@@ -49,4 +49,11 @@ async fn configure_postgres() -> PgPool {
         .expect("Failed to run database migrations!");
 
     pg_pool
+}
+
+fn _configure_redis() -> redis::Connection {
+    get_redis_client(REDIS_HOSTNAME.to_owned())
+        .expect("Failed to get Redis client")
+        .get_connection()
+        .expect("Failed to get Redis connection")
 }

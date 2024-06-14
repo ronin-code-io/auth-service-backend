@@ -7,6 +7,7 @@ lazy_static! {
     pub static ref ASSETS_DIR: String = set_assets_dir();
     pub static ref POSTGRES_PASSWORD: String = set_postgres_password();
     pub static ref DATABASE_URL: String = set_database_url();
+    pub static ref REDIS_HOSTNAME: String = set_redis_hostname();
 }
 
 fn load_env_file() {
@@ -59,11 +60,18 @@ fn set_database_url() -> String {
     })
 }
 
+fn set_redis_hostname() -> String {
+    load_env_file();
+    std_env::var(env::REDIS_HOSTNAME_ENV_VAR).unwrap_or(env::DEFAULT_REDIS_HOSTNAME.to_owned())
+}
+
 pub mod env {
     pub const JWT_SECRET_ENV_VAR: &str = "JWT_SECRET";
     pub const ASSETS_DIR_ENV_VAR: &str = "ASSETS_DIR";
     pub const POSTGRES_PASSWORD_ENV_VAR: &str = "POSTGRES_PASSWORD";
     pub const DATABASE_URL_ENV_VAR: &str = "DATABASE_URL";
+    pub const REDIS_HOSTNAME_ENV_VAR: &str = "REDIS_HOSTNAME";
+    pub const DEFAULT_REDIS_HOSTNAME: &str = "127.0.0.1";
 }
 
 pub mod prod {
