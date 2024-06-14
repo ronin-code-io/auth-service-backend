@@ -16,7 +16,7 @@ impl BannedTokenStore for HashSetBannedTokenStore {
         }
     }
 
-    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
+    async fn contains_token(&mut self, token: &str) -> Result<bool, BannedTokenStoreError> {
         Ok(self.banned_tokens.contains(token))
     }
 }
@@ -27,7 +27,7 @@ mod test {
 
     #[tokio::test]
     async fn should_return_false_if_token_is_not_banned() {
-        let banned_token_store = HashSetBannedTokenStore::default();
+        let mut banned_token_store = HashSetBannedTokenStore::default();
 
         let result = banned_token_store
             .contains_token("Unknown")

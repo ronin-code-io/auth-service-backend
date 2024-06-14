@@ -67,7 +67,7 @@ pub async fn validate_token(
     token: &str,
     banned_token_store: BannedTokenStoreType,
 ) -> Result<Claims, AuthAPIError> {
-    match banned_token_store.read().await.contains_token(token).await {
+    match banned_token_store.write().await.contains_token(token).await {
         Ok(false) => decode::<Claims>(
             token,
             &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
