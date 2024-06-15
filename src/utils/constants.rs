@@ -62,7 +62,10 @@ fn set_database_url() -> String {
 
 fn set_redis_hostname() -> String {
     load_env_file();
-    std_env::var(env::REDIS_HOSTNAME_ENV_VAR).unwrap_or(env::DEFAULT_REDIS_HOSTNAME.to_owned())
+    let redis_hostname =
+        std_env::var(env::REDIS_HOSTNAME_ENV_VAR).unwrap_or(env::DEFAULT_REDIS_HOSTNAME.to_owned());
+    println!("REDIS_HOSTNAME set to: {}", redis_hostname);
+    redis_hostname
 }
 
 pub mod env {
