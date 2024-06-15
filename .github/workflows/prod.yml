@@ -10,8 +10,8 @@ on:
 
 env:
   SQLX_OFFLINE: true
-  REDIS_HOSTNAME: "redis"
-
+  REDIS_PORT: 63799
+  REDIS_HOSTNAME: "127.0.0.1"
 
 jobs:
   build:
@@ -29,7 +29,7 @@ jobs:
       redis:
         image: redis:7.0-alpine
         ports:
-          - 6379:6379
+          - 63799:6379
         # Set health checks to wait until redis has started
         options: >-
           --health-cmd "redis-cli ping"
@@ -73,10 +73,13 @@ jobs:
 
     - name: Build and test auth-service code
       working-directory: ./auth-service-backend
+      env:
+        JWT_SECRET: secret
+        DATABASE_URL: postgres://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432
+        REDIS_HOSTNAME: ${{ env.REDIS_HOSTNAME }}
+        REDIS_PORT: 63799
+
       run: |
-        export JWT_SECRET=secret
-        export DATABASE_URL=postgres://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432
-        export REDIS_HOSTNAME=${{ env.REDIS_HOSTNAME }}
         cargo build --verbose
         cargo test --verbose
 
