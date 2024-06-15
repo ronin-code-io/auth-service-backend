@@ -10,6 +10,7 @@ on:
 
 env:
   SQLX_OFFLINE: true
+  REDIS_HOSTNAME: "redis"
 
 
 jobs:
@@ -69,6 +70,7 @@ jobs:
       run: |
         export JWT_SECRET=secret
         export DATABASE_URL=postgres://postgres:${{ secrets.POSTGRES_PASSWORD }}@localhost:5432
+        export REDIS_HOSTNAME=${{ env.REDIS_HOSTNAME }}
         cargo build --verbose
         cargo test --verbose
 
