@@ -8,6 +8,7 @@ lazy_static! {
     pub static ref POSTGRES_PASSWORD: String = set_postgres_password();
     pub static ref DATABASE_URL: String = set_database_url();
     pub static ref REDIS_HOSTNAME: String = set_redis_hostname();
+    pub static ref REDIS_PORT: u32 = set_redis_port();
 }
 
 fn load_env_file() {
@@ -62,10 +63,14 @@ fn set_database_url() -> String {
 
 fn set_redis_hostname() -> String {
     load_env_file();
-    let redis_hostname =
-        std_env::var(env::REDIS_HOSTNAME_ENV_VAR).unwrap_or(env::DEFAULT_REDIS_HOSTNAME.to_owned());
-    println!("REDIS_HOSTNAME set to: {}", redis_hostname);
-    redis_hostname
+    std_env::var(env::REDIS_HOSTNAME_ENV_VAR).unwrap_or(env::DEFAULT_REDIS_HOSTNAME.to_owned())
+}
+
+fn set_redis_port() -> u32 {
+    load_env_file();
+    std_env::var(env::REDIS_PORT_ENV_VAR)
+        .map(|v| v.parse::<u32>().expect("REDIS_PORT should be of type u32"))
+        .unwrap_or(env::DEFAULT_REDIS_PORT)
 }
 
 pub mod env {
@@ -74,7 +79,9 @@ pub mod env {
     pub const POSTGRES_PASSWORD_ENV_VAR: &str = "POSTGRES_PASSWORD";
     pub const DATABASE_URL_ENV_VAR: &str = "DATABASE_URL";
     pub const REDIS_HOSTNAME_ENV_VAR: &str = "REDIS_HOSTNAME";
+    pub const REDIS_PORT_ENV_VAR: &str = "REDIS_PORT";
     pub const DEFAULT_REDIS_HOSTNAME: &str = "127.0.0.1";
+    pub const DEFAULT_REDIS_PORT: u32 = 6379;
 }
 
 pub mod prod {

@@ -4,7 +4,7 @@ use auth_service::{
     app_state::AppState,
     get_postgres_pool, get_redis_client,
     services::{MockEmailClient, PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore},
-    utils::{prod, DATABASE_URL, REDIS_HOSTNAME},
+    utils::{prod, DATABASE_URL, REDIS_HOSTNAME, REDIS_PORT},
     Application,
 };
 use sqlx::PgPool;
@@ -54,7 +54,7 @@ async fn configure_postgres() -> PgPool {
 }
 
 fn configure_redis() -> redis::Connection {
-    get_redis_client(REDIS_HOSTNAME.to_owned())
+    get_redis_client(REDIS_HOSTNAME.to_owned(), *REDIS_PORT)
         .expect("Failed to get Redis client")
         .get_connection()
         .expect("Failed to get Redis connection")
