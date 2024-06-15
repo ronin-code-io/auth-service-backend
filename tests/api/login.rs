@@ -181,7 +181,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     let email = Email::parse(&random_email).expect("Could not parse email.");
 
-    let contains_code = app.two_fa_code_store.read().await.get_code(&email).await;
+    let contains_code = app.two_fa_code_store.write().await.get_code(&email).await;
 
     assert!(
         contains_code.is_ok(),

@@ -120,7 +120,7 @@ async fn should_return_401_if_incorrect_credentials() {
 
     let code = app
         .two_fa_code_store
-        .read()
+        .write()
         .await
         .get_code(&email)
         .await
@@ -193,7 +193,7 @@ async fn should_return_401_if_old_code() {
 
     let code = app
         .two_fa_code_store
-        .read()
+        .write()
         .await
         .get_code(&email)
         .await
@@ -268,7 +268,7 @@ async fn should_return_200_if_correct_code() {
 
     let code = app
         .two_fa_code_store
-        .read()
+        .write()
         .await
         .get_code(&email)
         .await
@@ -325,7 +325,7 @@ async fn should_return_401_if_correct_code_used_twice() {
 
     let code = app
         .two_fa_code_store
-        .read()
+        .write()
         .await
         .get_code(&email)
         .await

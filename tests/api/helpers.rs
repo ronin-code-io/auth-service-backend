@@ -41,7 +41,7 @@ impl TestApp {
     pub async fn new() -> Self {
         // TODO: Add test container at runtime
         let (pg_pool, db_name) = configure_postgresql().await;
-        let redis_connection = configure_redis();
+        let redis_connection = Arc::new(RwLock::new(configure_redis()));
 
         let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pool)));
         let banned_token_store =

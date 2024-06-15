@@ -3,10 +3,7 @@ extern crate dotenv;
 use auth_service::{
     app_state::AppState,
     get_postgres_pool, get_redis_client,
-    services::{
-        data_stores::HashMapTwoFACodeStore, MockEmailClient, PostgresUserStore,
-        RedisBannedTokenStore,
-    },
+    services::{MockEmailClient, PostgresUserStore, RedisBannedTokenStore, RedisTwoFACodeStore},
     utils::{prod, DATABASE_URL, REDIS_HOSTNAME},
     Application,
 };
@@ -18,11 +15,15 @@ use tokio::sync::RwLock;
 #[tokio::main]
 async fn main() {
     let pg_pol = configure_postgres().await;
-    let redis_connection = configure_redis();
+    let redis_connection = Arc::new(RwLock::new(configure_redis()));
 
     let user_store = Arc::new(RwLock::new(PostgresUserStore::new(pg_pol)));
-    let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_connection)));
-    let two_fa_code_store = Arc::new(RwLock::new(HashMapTwoFACodeStore::default()));
+    let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(
+        redis_connection.clone(),
+    )));
+    let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(
+        redis_connection.clone(),
+    )));
     let email_client = Arc::new(RwLock::new(MockEmailClient {}));
 
     let app_state = AppState::new(

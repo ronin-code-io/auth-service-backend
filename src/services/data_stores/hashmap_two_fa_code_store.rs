@@ -20,7 +20,7 @@ impl TwoFACodeStore for HashMapTwoFACodeStore {
     }
 
     async fn get_code(
-        &self,
+        &mut self,
         email: &Email,
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError> {
         match self.codes.get(email) {
@@ -58,7 +58,7 @@ mod test {
 
     #[tokio::test]
     async fn test_get_code_not_found() {
-        let store = HashMapTwoFACodeStore::default();
+        let mut store = HashMapTwoFACodeStore::default();
 
         let email = Email::parse("test@this.email").expect("Failed to parse email");
 

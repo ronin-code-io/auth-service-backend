@@ -1,12 +1,15 @@
+use std::sync::Arc;
+
 use crate::domain::{BannedTokenStore, BannedTokenStoreError};
 use redis::{Commands, Connection};
+use tokio::sync::RwLock;
 
 pub struct RedisBannedTokenStore {
-    conn: Connection,
+    conn: Arc<RwLock<Connection>>,
 }
 
 impl RedisBannedTokenStore {
-    pub fn new(conn: Connection) -> Self {
+    pub fn new(conn: Arc<RwLock<Connection>>) -> Self {
         Self { conn }
     }
 }
@@ -16,6 +19,8 @@ impl BannedTokenStore for RedisBannedTokenStore {
     async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
         let key = get_key(&token);
         self.conn
+            .write()
+            .await
             .set_ex(key, true, TOKEN_TTL_SECONDS)
             .map_err(|_| BannedTokenStoreError::UnexpectedError)
     }
@@ -24,6 +29,8 @@ impl BannedTokenStore for RedisBannedTokenStore {
         let key = get_key(token);
 
         self.conn
+            .write()
+            .await
             .exists(key)
             .map_err(|_| BannedTokenStoreError::UnexpectedError)
     }
