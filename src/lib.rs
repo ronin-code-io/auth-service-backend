@@ -13,7 +13,7 @@ use redis::{Client, RedisResult};
 use routes::{delete_account, login, logout, signup, verify_2fa, verify_token};
 use serde::{Deserialize, Serialize};
 use sqlx::{postgres::PgPoolOptions, PgPool};
-use tower_http::{cors::CorsLayer, services::ServeDir};
+use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 
 pub mod app_state;
 pub mod domain;
@@ -21,7 +21,7 @@ pub mod routes;
 pub mod services;
 pub mod utils;
 
-use utils::ASSETS_DIR;
+use utils::{make_span_with_request_id, on_request, on_response, ASSETS_DIR};
 
 pub struct Application {
     pub server: Serve<Router, Router>,
@@ -52,7 +52,13 @@ impl Application {
             .route("/verify-token", post(verify_token))
             .route("/account", delete(delete_account))
             .with_state(app_state)
-            .layer(cors);
+            .layer(cors)
+            .layer(
+                TraceLayer::new_for_http()
+                    .make_span_with(make_span_with_request_id)
+                    .on_request(on_request)
+                    .on_response(on_response),
+            );
 
         let listener = tokio::net::TcpListener::bind(address).await?;
         let address = listener.local_addr()?.to_string();

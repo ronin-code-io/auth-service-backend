@@ -22,6 +22,7 @@ impl PostgresUserStore {
 
 #[async_trait::async_trait]
 impl UserStore for PostgresUserStore {
+    #[tracing::instrument(name = "Adding user to PostgreSQL", skip_all)]
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         let email = user.email.as_ref();
 
@@ -59,6 +60,7 @@ impl UserStore for PostgresUserStore {
         }
     }
 
+    #[tracing::instrument(name = "Retrieving user from PostgreSQL", skip_all)]
     async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
         sqlx::query!("SELECT * FROM users WHERE email = $1", email.as_ref())
             .fetch_one(&self.pool)
@@ -71,6 +73,7 @@ impl UserStore for PostgresUserStore {
             .map_err(|_| UserStoreError::UserNotFound)
     }
 
+    #[tracing::instrument(name = "Validating user credentials in PostgreSQL", skip_all)]
     async fn validate_user(
         &self,
         email: &Email,
@@ -88,6 +91,7 @@ impl UserStore for PostgresUserStore {
         }
     }
 
+    #[tracing::instrument(name = "Deleting user data from PostgreSQL", skip_all)]
     async fn delete_user(&mut self, email: &Email) -> Result<(), UserStoreError> {
         let result = sqlx::query!("DELETE FROM users WHERE email = $1", email.as_ref())
             .execute(&self.pool)
@@ -105,13 +109,17 @@ impl UserStore for PostgresUserStore {
     }
 }
 
+#[tracing::instrument(name = "Verify password hash", skip_all)]
 async fn verify_password_hash(
     password: String,
     hashed_password: String,
 ) -> Result<(), Box<dyn Error>> {
+    let current_span: tracing::Span = tracing::Span::current();
     let result = task::spawn_blocking(move || {
-        let hash: PasswordHash<'_> = PasswordHash::new(&hashed_password)?;
-        Argon2::default().verify_password(password.as_bytes(), &hash.clone())
+        current_span.in_scope(|| {
+            let hash: PasswordHash<'_> = PasswordHash::new(&hashed_password)?;
+            Argon2::default().verify_password(password.as_bytes(), &hash.clone())
+        })
     })
     .await?;
 
@@ -121,17 +129,21 @@ async fn verify_password_hash(
     }
 }
 
+#[tracing::instrument(name = "Computing password hash", skip_all)]
 async fn compute_password_hash(password: String) -> Result<String, Box<dyn Error>> {
+    let current_span: tracing::Span = tracing::Span::current();
     let result = task::spawn_blocking(move || {
-        let salt: SaltString = SaltString::generate(&mut rand::thread_rng());
-        Argon2::new(
-            Algorithm::Argon2id,
-            Version::V0x13,
-            Params::new(15000, 2, 1, None).unwrap(),
-        )
-        .hash_password(password.as_bytes(), &salt)
-        .unwrap()
-        .to_string()
+        current_span.in_scope(|| {
+            let salt: SaltString = SaltString::generate(&mut rand::thread_rng());
+            Argon2::new(
+                Algorithm::Argon2id,
+                Version::V0x13,
+                Params::new(15000, 2, 1, None).unwrap(),
+            )
+            .hash_password(password.as_bytes(), &salt)
+            .unwrap()
+            .to_string()
+        })
     })
     .await;
 
