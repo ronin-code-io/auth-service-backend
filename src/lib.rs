@@ -63,7 +63,7 @@ impl Application {
     }
 
     pub async fn run(self) -> Result<(), std::io::Error> {
-        println!("listening on {}", &self.address);
+        tracing::info!("listening on {}", &self.address);
         self.server.await
     }
 }
@@ -102,6 +102,6 @@ pub async fn get_postgres_pool(url: &str) -> Result<PgPool, sqlx::Error> {
 
 pub fn get_redis_client(redis_hostname: String, redis_port: u32) -> RedisResult<Client> {
     let redis_url = format!("redis://{}:{}/", redis_hostname, redis_port);
-    println!("Redis url: {redis_url}");
+    tracing::info!("Redis url: {redis_url}");
     Client::open(redis_url.as_str())
 }

@@ -13,8 +13,8 @@ lazy_static! {
 
 fn load_env_file() {
     match dotenv() {
-        Ok(_) => println!("Loaded env file."),
-        Err(_) => println!("Failed to load env file!"),
+        Ok(_) => tracing::debug!("Loaded env file."),
+        Err(_) => tracing::warn!("Failed to load env file!"),
     }
 }
 
@@ -37,7 +37,7 @@ fn set_token() -> String {
 fn set_assets_dir() -> String {
     load_env_file();
     let assets_dir = std_env::var(env::ASSETS_DIR_ENV_VAR).unwrap_or_else(|_| "assets".to_owned());
-    println!("Assets dir: {}", assets_dir);
+    tracing::debug!("Assets dir: {}", assets_dir);
     assets_dir
 }
 
