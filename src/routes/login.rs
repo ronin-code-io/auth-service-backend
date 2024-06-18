@@ -93,26 +93,24 @@ async fn handle_2fa(
     let code = TwoFACode::default();
     let login_attempt_id = LoginAttemptId::default();
 
-    if state
+    if let Err(e) = state
         .two_fa_code_store
         .write()
         .await
         .add_code(email.clone(), login_attempt_id.clone(), code.clone())
         .await
-        .is_err()
     {
-        return (jar, Err(AuthAPIError::UnexpectedError));
+        return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
     }
 
-    if state
+    if let Err(e) = state
         .email_client
         .read()
         .await
         .send_email(email, "2FA code", code.as_ref())
         .await
-        .is_err()
     {
-        return (jar, Err(AuthAPIError::UnexpectedError));
+        return (jar, Err(AuthAPIError::UnexpectedError(e)));
     };
 
     let response = TwoFactorAuthResponse {

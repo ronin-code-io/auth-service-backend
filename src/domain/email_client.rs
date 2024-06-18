@@ -1,3 +1,4 @@
+use color_eyre::eyre::Result;
 use super::Email;
 
 #[async_trait::async_trait]
@@ -7,5 +8,5 @@ pub trait EmailClient {
         recipient: &Email,
         subject: &str,
         content: &str,
-    ) -> Result<(), String>;
+    ) -> Result<()>;
 }

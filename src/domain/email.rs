@@ -1,14 +1,15 @@
+use color_eyre::eyre::{eyre, Result};
 use validator::validate_email;
 
 #[derive(PartialEq, Eq, Clone, Debug, Hash)]
 pub struct Email(String);
 
 impl Email {
-    pub fn parse(email: &str) -> Result<Self, String> {
+    pub fn parse(email: &str) -> Result<Self> {
         if validate_email(email) {
             Ok(Self(String::from(email)))
         } else {
-            Err(format!("Invalid email: {}", email))
+            Err(eyre!("Invalid email".to_owned()))
         }
     }
 }

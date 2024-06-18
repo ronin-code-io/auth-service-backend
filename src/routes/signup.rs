@@ -14,7 +14,7 @@ pub struct SignupRequest {
     pub requires_2fa: bool,
 }
 
-#[tracing::instrument(name = "Signup", skip_all, err(Debug))]
+#[tracing::instrument(name = "Signup", skip_all)]
 pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
@@ -29,7 +29,7 @@ pub async fn signup(
 
     match user_store.add_user(user).await {
         Err(UserStoreError::UserAlreadyExists) => return Err(AuthAPIError::UserAlreadyExists),
-        Err(_) => return Err(AuthAPIError::UnexpectedError),
+        Err(e) => return Err(AuthAPIError::UnexpectedError(e.into())),
         Ok(_) => (),
     };
 
