@@ -1,5 +1,7 @@
 use std::collections::HashSet;
 
+use color_eyre::eyre::{eyre, Result};
+
 use crate::domain::{BannedTokenStore, BannedTokenStoreError};
 
 #[derive(Default)]
@@ -12,11 +14,13 @@ impl BannedTokenStore for HashSetBannedTokenStore {
     async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
         match self.banned_tokens.insert(token) {
             true => Ok(()),
-            false => Err(BannedTokenStoreError::UnexpectedError),
+            false => Err(BannedTokenStoreError::UnexpectedError(eyre!(
+                "Failed to add token into hashset.".to_owned()
+            ))),
         }
     }
 
-    async fn contains_token(&mut self, token: &str) -> Result<bool, BannedTokenStoreError> {
+    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
         Ok(self.banned_tokens.contains(token))
     }
 }
@@ -27,7 +31,7 @@ mod test {
 
     #[tokio::test]
     async fn should_return_false_if_token_is_not_banned() {
-        let mut banned_token_store = HashSetBannedTokenStore::default();
+        let banned_token_store = HashSetBannedTokenStore::default();
 
         let result = banned_token_store
             .contains_token("Unknown")

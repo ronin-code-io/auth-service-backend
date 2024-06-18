@@ -29,9 +29,10 @@ impl PartialEq for UserStoreError {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Error)]
 pub enum BannedTokenStoreError {
-    UnexpectedError,
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] Report),
 }
 
 #[async_trait::async_trait]
@@ -46,7 +47,7 @@ pub trait UserStore {
 #[async_trait::async_trait]
 pub trait BannedTokenStore {
     async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError>;
-    async fn contains_token(&mut self, token: &str) -> Result<bool, BannedTokenStoreError>;
+    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError>;
 }
 
 #[derive(Debug, Error)]

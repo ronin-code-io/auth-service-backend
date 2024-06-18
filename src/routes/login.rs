@@ -28,6 +28,7 @@ pub struct TwoFactorAuthResponse {
     pub login_attempt_id: String,
 }
 
+#[tracing::instrument(name = "Login", skip_all)]
 pub async fn login(
     State(state): State<AppState>,
     jar: CookieJar,
@@ -68,13 +69,12 @@ async fn handle_no_2fa(
     CookieJar,
     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
 ) {
-    let auth_cookie = generate_auth_cookie(email);
+    let auth_cookie = match generate_auth_cookie(email) {
+        Ok(cookie) => cookie,
+        Err(e) => return (jar, Err(AuthAPIError::UnexpectedError(e))),
+    };
 
-    if auth_cookie.is_err() {
-        return (jar, Err(AuthAPIError::UnexpectedError));
-    }
-
-    let updated_jar = jar.add(auth_cookie.unwrap());
+    let updated_jar = jar.add(auth_cookie);
 
     (
         updated_jar,

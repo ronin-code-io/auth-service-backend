@@ -24,16 +24,25 @@ impl PostgresUserStore {
 impl UserStore for PostgresUserStore {
     #[tracing::instrument(name = "Adding user to PostgreSQL", skip_all)]
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
+        let email = user.email.as_ref();
         let password_hash = compute_password_hash(user.password.as_ref().to_owned())
             .await
             .map_err(UserStoreError::UnexpectedError)?;
+
+        if sqlx::query!("SELECT email FROM users WHERE email = $1", email)
+            .fetch_one(&self.pool)
+            .await
+            .is_ok()
+        {
+            return Err(UserStoreError::UserAlreadyExists);
+        }
 
         sqlx::query!(
             r#"
         INSERT INTO users (email, password_hash, requires_2fa)
         VALUES ($1, $2, $3)
         "#,
-            user.email.as_ref(),
+            email,
             &password_hash,
             user.requires_2fa
         )
@@ -92,7 +101,7 @@ impl UserStore for PostgresUserStore {
         let result = sqlx::query!("DELETE FROM users WHERE email = $1", email.as_ref())
             .execute(&self.pool)
             .await
-            .map_err(|e| UserStoreError::UnexpectedError(eyre!(e)))?;
+            .map_err(|e| UserStoreError::UnexpectedError(e.into()))?;
 
         if result.rows_affected() == 0 {
             Err(UserStoreError::UserNotFound)

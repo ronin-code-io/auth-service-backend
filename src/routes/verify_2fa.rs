@@ -17,21 +17,21 @@ pub struct VerifyTwoFactorAuthToken {
     pub code: String,
 }
 
+#[tracing::instrument(name = "Verify 2FA code", skip_all)]
 pub async fn verify_2fa(
     State(state): State<AppState>,
     jar: CookieJar,
     Json(request): Json<VerifyTwoFactorAuthToken>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = Email::parse(&request.email);
-    let login_attempt_id = LoginAttemptId::parse(&request.login_attempt_id);
-    let two_fa_code = TwoFACode::parse(request.code.clone());
-
-    if email.is_err() || login_attempt_id.is_err() || two_fa_code.is_err() {
-        return (jar, Err(AuthAPIError::InvalidCredentials));
-    }
-    let email = email.unwrap();
-    let two_fa_code = two_fa_code.unwrap();
-    let login_attempt_id = login_attempt_id.unwrap();
+    let email = Email::parse(&request.email)
+        .map_err(|_| AuthAPIError::InvalidCredentials)
+        .unwrap();
+    let login_attempt_id = LoginAttemptId::parse(&request.login_attempt_id)
+        .map_err(|_| AuthAPIError::InvalidCredentials)
+        .unwrap();
+    let two_fa_code = TwoFACode::parse(request.code.clone())
+        .map_err(|_| AuthAPIError::InvalidCredentials)
+        .unwrap();
 
     let mut two_fa_code_store = state.two_fa_code_store.write().await;
 
@@ -41,19 +41,23 @@ pub async fn verify_2fa(
                 return (jar, Err(AuthAPIError::IncorrectCredentials));
             }
 
-            let cookie = generate_auth_cookie(&email);
+            let cookie = generate_auth_cookie(&email)
+                .map_err(AuthAPIError::UnexpectedError)
+                .unwrap();
 
-            if cookie.is_err() || two_fa_code_store.remove_code(&email).await.is_err() {
-                return (jar, Err(AuthAPIError::UnexpectedError));
-            };
+            two_fa_code_store
+                .remove_code(&email)
+                .await
+                .map_err(|e| AuthAPIError::UnexpectedError(e.into()))
+                .unwrap();
 
-            let updated_jar = jar.add(cookie.unwrap());
+            let updated_jar = jar.add(cookie);
 
             (updated_jar, Ok(StatusCode::OK.into_response()))
         }
         Err(TwoFACodeStoreError::LoginAttemptIdNotFound) => {
             (jar, Err(AuthAPIError::IncorrectCredentials))
         }
-        Err(_) => (jar, Err(AuthAPIError::UnexpectedError)),
+        Err(e) => (jar, Err(AuthAPIError::UnexpectedError(e.into()))),
     }
 }

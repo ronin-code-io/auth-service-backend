@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::domain::{BannedTokenStore, BannedTokenStoreError};
+use color_eyre::eyre::Context;
 use redis::{Commands, Connection};
 use tokio::sync::RwLock;
 
@@ -17,22 +18,33 @@ impl RedisBannedTokenStore {
 #[async_trait::async_trait]
 impl BannedTokenStore for RedisBannedTokenStore {
     async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
-        let key = get_key(&token);
-        self.conn
+        let token_key = get_key(token.as_str());
+
+        let value = true;
+
+        let _: () = self
+            .conn
             .write()
             .await
-            .set_ex(key, true, TOKEN_TTL_SECONDS)
-            .map_err(|_| BannedTokenStoreError::UnexpectedError)
+            .set_ex(&token_key, value, TOKEN_TTL_SECONDS)
+            .wrap_err("failed to set banned token in Redis")
+            .map_err(BannedTokenStoreError::UnexpectedError)?;
+
+        Ok(())
     }
 
-    async fn contains_token(&mut self, token: &str) -> Result<bool, BannedTokenStoreError> {
-        let key = get_key(token);
+    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
+        let token_key = get_key(token);
 
-        self.conn
+        let is_banned: bool = self
+            .conn
             .write()
             .await
-            .exists(key)
-            .map_err(|_| BannedTokenStoreError::UnexpectedError)
+            .exists(&token_key)
+            .wrap_err("failed to check if token exists in Redis") // New!
+            .map_err(BannedTokenStoreError::UnexpectedError)?; // Updated!
+
+        Ok(is_banned)
     }
 }
 

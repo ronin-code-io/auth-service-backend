@@ -7,6 +7,7 @@ use crate::{
     utils::{validate_token, JWT_COOKIE_NAME},
 };
 
+#[tracing::instrument(name = "Logout", skip_all)]
 pub async fn logout(
     State(state): State<AppState>,
     jar: CookieJar,
@@ -29,14 +30,13 @@ pub async fn logout(
         return (jar, Err(AuthAPIError::InvalidToken));
     }
 
-    if banned_token_store
+    if let Err(e) = banned_token_store
         .write()
         .await
         .add_token(token)
         .await
-        .is_err()
     {
-        return (jar, Err(AuthAPIError::UnexpectedError));
+        return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
     };
 
     let static_cookie = Cookie::from(JWT_COOKIE_NAME);
