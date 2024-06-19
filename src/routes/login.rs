@@ -11,7 +11,7 @@ use crate::{
 
 #[derive(Deserialize)]
 pub struct LoginRequest {
-    pub email: String,
+    pub email: Secret<String>,
     pub password: Secret<String>,
 }
 
@@ -35,7 +35,7 @@ pub async fn login(
     jar: CookieJar,
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = Email::parse(&request.email);
+    let email = Email::parse(request.email);
     let password = Password::parse(request.password);
 
     if email.is_err() || password.is_err() {

@@ -9,7 +9,7 @@ use crate::{
 
 #[derive(Deserialize)]
 pub struct SignupRequest {
-    pub email: String,
+    pub email: Secret<String>,
     pub password: Secret<String>,
     #[serde(rename = "requires2FA")]
     pub requires_2fa: bool,
@@ -20,7 +20,7 @@ pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let email = Email::parse(&request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
     let password =
         Password::parse(request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 

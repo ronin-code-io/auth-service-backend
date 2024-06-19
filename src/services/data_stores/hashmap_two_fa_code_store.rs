@@ -39,6 +39,8 @@ impl TwoFACodeStore for HashMapTwoFACodeStore {
 
 #[cfg(test)]
 mod test {
+    use secrecy::Secret;
+
     use super::*;
     use crate::domain::{Email, LoginAttemptId, TwoFACode, TwoFACodeStoreError};
 
@@ -46,7 +48,8 @@ mod test {
     async fn test_add_code_success() {
         let mut store = HashMapTwoFACodeStore::default();
 
-        let email = Email::parse("test@this.mail").expect("Can not parse email.");
+        let email =
+            Email::parse(Secret::new("test@this.mail".to_owned())).expect("Can not parse email.");
         let login_attempt_id = LoginAttemptId::default();
         let code = TwoFACode::default();
 
@@ -60,7 +63,8 @@ mod test {
     async fn test_get_code_not_found() {
         let mut store = HashMapTwoFACodeStore::default();
 
-        let email = Email::parse("test@this.email").expect("Failed to parse email");
+        let email =
+            Email::parse(Secret::new("test@this.email".to_owned())).expect("Failed to parse email");
 
         let result = store.get_code(&email).await;
         assert_eq!(result, Err(TwoFACodeStoreError::LoginAttemptIdNotFound));
@@ -70,7 +74,8 @@ mod test {
     async fn test_get_code_success() {
         let mut store = HashMapTwoFACodeStore::default();
 
-        let email = Email::parse("test@this.mail").expect("Can not parse email.");
+        let email =
+            Email::parse(Secret::new("test@this.mail".to_owned())).expect("Can not parse email.");
         let login_attempt_id = LoginAttemptId::default();
         let code = TwoFACode::default();
 

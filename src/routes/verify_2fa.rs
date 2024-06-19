@@ -1,6 +1,7 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
-use serde::{Deserialize, Serialize};
+use secrecy::Secret;
+use serde::Deserialize;
 
 use crate::{
     app_state::AppState,
@@ -8,9 +9,9 @@ use crate::{
     utils::generate_auth_cookie,
 };
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Deserialize, Debug)]
 pub struct VerifyTwoFactorAuthToken {
-    pub email: String,
+    pub email: Secret<String>,
     #[serde(rename = "loginAttemptId")]
     pub login_attempt_id: String,
     #[serde(rename = "2FACode")]
@@ -23,7 +24,7 @@ pub async fn verify_2fa(
     jar: CookieJar,
     Json(request): Json<VerifyTwoFactorAuthToken>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = Email::parse(&request.email)
+    let email = Email::parse(request.email)
         .map_err(|_| AuthAPIError::InvalidCredentials)
         .unwrap();
     let login_attempt_id = LoginAttemptId::parse(&request.login_attempt_id)

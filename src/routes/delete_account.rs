@@ -1,4 +1,5 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use secrecy::Secret;
 use serde::Deserialize;
 
 use crate::{
@@ -8,7 +9,7 @@ use crate::{
 
 #[derive(Deserialize)]
 pub struct DeleteAccountRequest {
-    pub email: String,
+    pub email: Secret<String>,
 }
 
 #[tracing::instrument(name = "Delete Account", skip_all)]
@@ -16,7 +17,7 @@ pub async fn delete_account(
     State(state): State<AppState>,
     Json(request): Json<DeleteAccountRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let email = Email::parse(&request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     let mut user_store = state.user_store.write().await;
 

@@ -25,6 +25,7 @@ pub struct TestApp {
     pub http_client: reqwest::Client,
     pub banned_token_store: Arc<RwLock<dyn BannedTokenStore>>,
     pub two_fa_code_store: Arc<RwLock<dyn TwoFACodeStore>>,
+    #[allow(dead_code)]
     pub email_client: Arc<RwLock<dyn EmailClient>>,
     pub clean_up_called: bool,
 }

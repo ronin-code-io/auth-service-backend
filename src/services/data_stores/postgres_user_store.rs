@@ -30,10 +30,13 @@ impl UserStore for PostgresUserStore {
             .map_err(UserStoreError::UnexpectedError)?;
         let email = user.email.as_ref();
 
-        if sqlx::query!("SELECT email FROM users WHERE email = $1", email)
-            .fetch_one(&self.pool)
-            .await
-            .is_ok()
+        if sqlx::query!(
+            "SELECT email FROM users WHERE email = $1",
+            email.expose_secret()
+        )
+        .fetch_one(&self.pool)
+        .await
+        .is_ok()
         {
             return Err(UserStoreError::UserAlreadyExists);
         }
@@ -43,7 +46,7 @@ impl UserStore for PostgresUserStore {
         INSERT INTO users (email, password_hash, requires_2fa)
         VALUES ($1, $2, $3)
         "#,
-            email,
+            email.expose_secret(),
             &password_hash.expose_secret(),
             user.requires_2fa
         )
@@ -62,13 +65,14 @@ impl UserStore for PostgresUserStore {
             FROM users
             WHERE email = $1
             "#,
-            email.as_ref()
+            email.as_ref().expose_secret(),
         )
         .fetch_optional(&self.pool)
         .await
         .map_err(|e| UserStoreError::UnexpectedError(e.into()))?
         .map(|row| {
-            let email = Email::parse(&row.email).map_err(UserStoreError::UnexpectedError)?;
+            let email =
+                Email::parse(Secret::new(row.email)).map_err(UserStoreError::UnexpectedError)?;
             let password = Password::parse(Secret::new(row.password_hash))
                 .map_err(UserStoreError::UnexpectedError)?;
 
@@ -97,10 +101,13 @@ impl UserStore for PostgresUserStore {
 
     #[tracing::instrument(name = "Deleting user data from PostgreSQL", skip_all)]
     async fn delete_user(&mut self, email: &Email) -> Result<(), UserStoreError> {
-        let result = sqlx::query!("DELETE FROM users WHERE email = $1", email.as_ref())
-            .execute(&self.pool)
-            .await
-            .map_err(|e| UserStoreError::UnexpectedError(e.into()))?;
+        let result = sqlx::query!(
+            "DELETE FROM users WHERE email = $1",
+            email.as_ref().expose_secret()
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| UserStoreError::UnexpectedError(e.into()))?;
 
         if result.rows_affected() == 0 {
             Err(UserStoreError::UserNotFound)

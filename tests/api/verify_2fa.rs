@@ -5,6 +5,7 @@ use auth_service::{
     utils::JWT_COOKIE_NAME,
     ErrorResponse,
 };
+use secrecy::Secret;
 use serde_json::json;
 
 #[tokio::test]
@@ -92,12 +93,12 @@ async fn should_return_400_if_invalid_input() {
 async fn should_return_401_if_incorrect_credentials() {
     let mut app = TestApp::new().await;
 
-    let email = Email::parse(&get_random_email()).expect("Failed to parse random email");
+    let email = get_random_email();
     let password = "TestPassword";
 
     let response = app
         .post_signup(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "password": password,
             "requires2FA": true,
         }))
@@ -107,7 +108,7 @@ async fn should_return_401_if_incorrect_credentials() {
 
     let response = app
         .post_login(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "password": password,
         }))
         .await;
@@ -122,24 +123,24 @@ async fn should_return_401_if_incorrect_credentials() {
         .two_fa_code_store
         .write()
         .await
-        .get_code(&email)
+        .get_code(&Email::parse(Secret::new(email.to_owned())).expect("Failed to parse email"))
         .await
         .expect("Could not obtain code from app state")
         .1;
 
     let test_cases = [
         json!({
-        "email": email.as_ref(),
+        "email": email,
         "loginAttemptId": login_attempt_id,
         "2FACode": TwoFACode::default().as_ref(),
         }),
         json!({
-            "email": Email::parse(&get_random_email()).expect("Failed to parse random email").as_ref(),
+            "email": get_random_email(),
             "loginAttemptId": login_attempt_id,
             "2FACode": code.as_ref(),
         }),
         json!({
-            "email": email.as_ref(),
+            "email": email,
             "loginAttemptId": LoginAttemptId::default().as_ref(),
             "2FACode": code.as_ref(),
         }),
@@ -171,12 +172,12 @@ async fn should_return_401_if_incorrect_credentials() {
 async fn should_return_401_if_old_code() {
     let mut app = TestApp::new().await;
 
-    let email = Email::parse(&get_random_email()).expect("Failed to parse random email");
+    let email = get_random_email();
     let password = "TestPassword";
 
     let response = app
         .post_signup(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "password": password,
             "requires2FA": true,
         }))
@@ -186,7 +187,7 @@ async fn should_return_401_if_old_code() {
 
     let response = app
         .post_login(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "password": password,
         }))
         .await;
@@ -195,13 +196,13 @@ async fn should_return_401_if_old_code() {
         .two_fa_code_store
         .write()
         .await
-        .get_code(&email)
+        .get_code(&Email::parse(Secret::new(email.clone())).expect("Failed to parse email."))
         .await
         .expect("Could not obtain code from app state")
         .1;
 
     app.post_login(&json!({
-        "email": email.as_ref(),
+        "email": email,
         "password": password,
     }))
     .await;
@@ -214,7 +215,7 @@ async fn should_return_401_if_old_code() {
 
     let response = app
         .post_verify_2fa(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "2FACode": code.as_ref(),
             "loginAttemptId": login_attempt_id,
         }))
@@ -241,12 +242,12 @@ async fn should_return_401_if_old_code() {
 async fn should_return_200_if_correct_code() {
     let mut app = TestApp::new().await;
 
-    let email = Email::parse(&get_random_email()).expect("Could not parse email");
+    let email = get_random_email();
     let password = "TesPassword";
 
     let response = app
         .post_signup(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "password": password,
             "requires2FA": true,
         }))
@@ -256,7 +257,7 @@ async fn should_return_200_if_correct_code() {
 
     let login_attempt_id = app
         .post_login(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "password": password,
 
         }))
@@ -270,14 +271,14 @@ async fn should_return_200_if_correct_code() {
         .two_fa_code_store
         .write()
         .await
-        .get_code(&email)
+        .get_code(&Email::parse(Secret::new(email.clone())).expect("Failed to parse email"))
         .await
         .expect("Could not obtain code from app state")
         .1;
 
     let response = app
         .post_verify_2fa(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "loginAttemptId": login_attempt_id,
             "2FACode": code.as_ref(),
         }))
@@ -298,12 +299,12 @@ async fn should_return_200_if_correct_code() {
 async fn should_return_401_if_correct_code_used_twice() {
     let mut app = TestApp::new().await;
 
-    let email = Email::parse(&get_random_email()).expect("Could not parse email");
+    let email = get_random_email();
     let password = "TesPassword";
 
     let response = app
         .post_signup(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "password": password,
             "requires2FA": true,
         }))
@@ -313,7 +314,7 @@ async fn should_return_401_if_correct_code_used_twice() {
 
     let login_attempt_id = app
         .post_login(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "password": password,
 
         }))
@@ -327,14 +328,14 @@ async fn should_return_401_if_correct_code_used_twice() {
         .two_fa_code_store
         .write()
         .await
-        .get_code(&email)
+        .get_code(&Email::parse(Secret::new(email.clone())).expect("Failed to parse email"))
         .await
         .expect("Could not obtain code from app state")
         .1;
 
     let response = app
         .post_verify_2fa(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "loginAttemptId": login_attempt_id,
             "2FACode": code.as_ref(),
         }))
@@ -351,7 +352,7 @@ async fn should_return_401_if_correct_code_used_twice() {
 
     let response = app
         .post_verify_2fa(&json!({
-            "email": email.as_ref(),
+            "email": email,
             "2FACode": code.as_ref(),
             "loginAttemptId": login_attempt_id,
         }))

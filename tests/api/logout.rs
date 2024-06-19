@@ -5,6 +5,7 @@ use auth_service::{
     ErrorResponse,
 };
 use reqwest::{self, Url};
+use secrecy::Secret;
 
 use crate::helpers::TestApp;
 
@@ -103,7 +104,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 async fn should_return_400_if_logout_called_twice_in_a_row() {
     let mut app = TestApp::new().await;
 
-    let email = Email::parse(&get_random_email()).expect("Could not generate email");
+    let email = Email::parse(Secret::new(get_random_email())).expect("Could not generate email");
     let cookie = generate_auth_cookie(&email).expect("Could not generate cookie");
 
     app.cookie_jar.add_cookie_str(

@@ -1,5 +1,6 @@
 use auth_service::domain::Email;
 use auth_service::{routes::TwoFactorAuthResponse, utils::JWT_COOKIE_NAME, ErrorResponse};
+use secrecy::Secret;
 use serde_json::json;
 use std::borrow::Borrow;
 
@@ -179,7 +180,7 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     assert!(!response_body.login_attempt_id.is_empty());
 
-    let email = Email::parse(&random_email).expect("Could not parse email.");
+    let email = Email::parse(Secret::new(random_email)).expect("Could not parse email.");
 
     let contains_code = app.two_fa_code_store.write().await.get_code(&email).await;
 

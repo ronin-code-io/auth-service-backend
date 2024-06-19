@@ -1,6 +1,7 @@
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
+use secrecy::ExposeSecret;
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::BannedTokenStoreType;
@@ -44,7 +45,7 @@ fn generate_auth_token(email: &Email) -> Result<String> {
         exp
     ))?;
 
-    let sub = email.as_ref().to_owned();
+    let sub = email.as_ref().expose_secret().clone();
 
     let claims = Claims { sub, exp };
 
@@ -85,6 +86,7 @@ pub async fn validate_token(
 mod test {
     use std::sync::Arc;
 
+    use secrecy::Secret;
     use tokio::sync::RwLock;
 
     use crate::{domain::BannedTokenStore, services::HashSetBannedTokenStore};
@@ -93,7 +95,7 @@ mod test {
 
     #[tokio::test]
     async fn test_generate_auth_cookie() {
-        let email = Email::parse("test@example.com").unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let cookie = generate_auth_cookie(&email).unwrap();
 
         assert_eq!(cookie.name(), JWT_COOKIE_NAME);
@@ -116,14 +118,14 @@ mod test {
 
     #[tokio::test]
     async fn test_generate_auth_token() {
-        let email = Email::parse("test@example.com").unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let result = generate_auth_token(&email).unwrap();
         assert_eq!(result.split('.').count(), 3);
     }
 
     #[tokio::test]
     async fn test_validate_token_with_valid_token() {
-        let email = Email::parse("test@example.com").unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let token = generate_auth_token(&email).unwrap();
         let result = validate_token(
             &token,
@@ -143,7 +145,7 @@ mod test {
 
     #[tokio::test]
     async fn test_validate_token_with_banned_token() {
-        let email = Email::parse("test@example.com").unwrap();
+        let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let token = generate_auth_token(&email).unwrap();
         let mut banned_token_store = HashSetBannedTokenStore::default();
 
