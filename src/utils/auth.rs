@@ -65,7 +65,7 @@ pub async fn validate_token(
     token: &Secret<String>,
     banned_token_store: BannedTokenStoreType,
 ) -> Result<Claims> {
-    match banned_token_store.read().await.contains_token(&token).await {
+    match banned_token_store.read().await.contains_token(token).await {
         Ok(value) => {
             if value {
                 return Err(eyre!("Token is banned."));
