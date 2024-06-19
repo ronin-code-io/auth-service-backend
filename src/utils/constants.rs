@@ -1,12 +1,13 @@
 use dotenv::dotenv;
 use lazy_static::lazy_static;
+use secrecy::{ExposeSecret, Secret};
 use std::env as std_env;
 
 lazy_static! {
-    pub static ref JWT_SECRET: String = set_token();
+    pub static ref JWT_SECRET: Secret<String> = set_token();
     pub static ref ASSETS_DIR: String = set_assets_dir();
     pub static ref POSTGRES_PASSWORD: String = set_postgres_password();
-    pub static ref DATABASE_URL: String = set_database_url();
+    pub static ref DATABASE_URL: Secret<String> = set_database_url();
     pub static ref REDIS_HOSTNAME: String = set_redis_hostname();
     pub static ref REDIS_PORT: u32 = set_redis_port();
 }
@@ -18,16 +19,16 @@ fn load_env_file() {
     }
 }
 
-fn set_token() -> String {
+fn set_token() -> Secret<String> {
     load_env_file();
-    let secret = std_env::var(env::JWT_SECRET_ENV_VAR).unwrap_or_else(|_| {
+    let secret = Secret::new(std_env::var(env::JWT_SECRET_ENV_VAR).unwrap_or_else(|_| {
         panic!(
             "{} environment variable must be set.",
             env::JWT_SECRET_ENV_VAR
         )
-    });
+    }));
 
-    if secret.is_empty() {
+    if secret.expose_secret().is_empty() {
         panic!("{} must not be empty.", env::JWT_SECRET_ENV_VAR);
     }
 
@@ -51,14 +52,14 @@ fn set_postgres_password() -> String {
     })
 }
 
-fn set_database_url() -> String {
+fn set_database_url() -> Secret<String> {
     load_env_file();
-    std_env::var(env::DATABASE_URL_ENV_VAR).unwrap_or_else(|_| {
+    Secret::new(std_env::var(env::DATABASE_URL_ENV_VAR).unwrap_or_else(|_| {
         panic!(
             "{} environment variable must be set.",
             env::DATABASE_URL_ENV_VAR
         )
-    })
+    }))
 }
 
 fn set_redis_hostname() -> String {
