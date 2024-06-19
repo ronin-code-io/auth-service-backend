@@ -13,9 +13,9 @@ use crate::{
 pub struct VerifyTwoFactorAuthToken {
     pub email: Secret<String>,
     #[serde(rename = "loginAttemptId")]
-    pub login_attempt_id: String,
+    pub login_attempt_id: Secret<String>,
     #[serde(rename = "2FACode")]
-    pub code: String,
+    pub code: Secret<String>,
 }
 
 #[tracing::instrument(name = "Verify 2FA code", skip_all)]
@@ -24,15 +24,17 @@ pub async fn verify_2fa(
     jar: CookieJar,
     Json(request): Json<VerifyTwoFactorAuthToken>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
-    let email = Email::parse(request.email)
-        .map_err(|_| AuthAPIError::InvalidCredentials)
-        .unwrap();
-    let login_attempt_id = LoginAttemptId::parse(&request.login_attempt_id)
-        .map_err(|_| AuthAPIError::InvalidCredentials)
-        .unwrap();
-    let two_fa_code = TwoFACode::parse(request.code.clone())
-        .map_err(|_| AuthAPIError::InvalidCredentials)
-        .unwrap();
+    let email = Email::parse(request.email);
+    let login_attempt_id = LoginAttemptId::parse(request.login_attempt_id);
+    let two_fa_code = TwoFACode::parse(request.code.clone());
+
+    if email.is_err() || login_attempt_id.is_err() || two_fa_code.is_err() {
+        return (jar, Err(AuthAPIError::IncorrectCredentials));
+    }
+
+    let email = email.unwrap();
+    let login_attempt_id = login_attempt_id.unwrap();
+    let two_fa_code = two_fa_code.unwrap();
 
     let mut two_fa_code_store = state.two_fa_code_store.write().await;
 

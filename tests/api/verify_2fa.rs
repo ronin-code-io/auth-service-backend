@@ -1,12 +1,10 @@
 use crate::helpers::{get_random_email, TestApp};
 use auth_service::{
-    domain::{Email, LoginAttemptId, TwoFACode},
-    routes::TwoFactorAuthResponse,
-    utils::JWT_COOKIE_NAME,
-    ErrorResponse,
+    domain::Email, routes::TwoFactorAuthResponse, utils::JWT_COOKIE_NAME, ErrorResponse,
 };
-use secrecy::Secret;
+use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
+use uuid::Uuid;
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -16,17 +14,17 @@ async fn should_return_422_if_malformed_input() {
         json!({}),
         json!({
             "mail": get_random_email(),
-            "loginAttemptId": LoginAttemptId::default().as_ref(),
+            "loginAttemptId": Uuid::new_v4().to_string(),
             "2FACode": "111111",
         }),
         json!({
             "email": get_random_email(),
-            "loginAttempt": LoginAttemptId::default().as_ref(),
+            "loginAttempt": Uuid::new_v4().to_string(),
             "2FACode": "111111",
         }),
         json!({
             "email": get_random_email(),
-            "loginAttemptId": LoginAttemptId::default().as_ref(),
+            "loginAttemptId": Uuid::new_v4().to_string(),
             "FACode": "111111",
         }),
     ];
@@ -50,28 +48,28 @@ async fn should_return_400_if_invalid_input() {
 
     let test_cases = [
         json!({
-            "email": get_random_email(),
+            "email": get_random_email().to_string(),
             "loginAttemptId": 123546,
             "2FACode": "111111",
         }),
         json!({
             "email": get_random_email(),
-            "loginAttemptId": LoginAttemptId::default().as_ref(),
+            "loginAttemptId": Uuid::new_v4().to_string(),
             "FACode": 123654,
         }),
         json!({
             "email": get_random_email(),
-            "loginAttemptId": LoginAttemptId::default().as_ref(),
+            "loginAttemptId": Uuid::new_v4().to_string(),
             "FACode": "asdf",
         }),
         json!({
             "email": get_random_email(),
             "loginAttemptId": "asdf",
-            "FACode": TwoFACode::default().as_ref(),
+            "FACode": "666666",
         }),
         json!({
             "email": get_random_email(),
-            "loginAttemptId": LoginAttemptId::default().as_ref(),
+            "loginAttemptId": Uuid::new_v4().to_string(),
             "FACode": "123456789123456789",
         }),
     ];
@@ -132,22 +130,24 @@ async fn should_return_401_if_incorrect_credentials() {
         json!({
         "email": email,
         "loginAttemptId": login_attempt_id,
-        "2FACode": TwoFACode::default().as_ref(),
+        "2FACode": "000000",
         }),
         json!({
             "email": get_random_email(),
             "loginAttemptId": login_attempt_id,
-            "2FACode": code.as_ref(),
+            "2FACode": code.expose_secret(),
         }),
         json!({
             "email": email,
-            "loginAttemptId": LoginAttemptId::default().as_ref(),
-            "2FACode": code.as_ref(),
+            "loginAttemptId": Uuid::new_v4(),
+            "2FACode": code.expose_secret(),
         }),
     ];
 
     for test_case in test_cases.iter() {
         let response = app.post_verify_2fa(&test_case).await;
+
+        println!("{:?}", response);
 
         assert_eq!(
             response.status().as_u16(),
@@ -216,7 +216,7 @@ async fn should_return_401_if_old_code() {
     let response = app
         .post_verify_2fa(&json!({
             "email": email,
-            "2FACode": code.as_ref(),
+            "2FACode": code.expose_secret(),
             "loginAttemptId": login_attempt_id,
         }))
         .await;
@@ -280,7 +280,7 @@ async fn should_return_200_if_correct_code() {
         .post_verify_2fa(&json!({
             "email": email,
             "loginAttemptId": login_attempt_id,
-            "2FACode": code.as_ref(),
+            "2FACode": code.expose_secret(),
         }))
         .await;
 
@@ -337,7 +337,7 @@ async fn should_return_401_if_correct_code_used_twice() {
         .post_verify_2fa(&json!({
             "email": email,
             "loginAttemptId": login_attempt_id,
-            "2FACode": code.as_ref(),
+            "2FACode": code.expose_secret(),
         }))
         .await;
 
@@ -353,7 +353,7 @@ async fn should_return_401_if_correct_code_used_twice() {
     let response = app
         .post_verify_2fa(&json!({
             "email": email,
-            "2FACode": code.as_ref(),
+            "2FACode": code.expose_secret(),
             "loginAttemptId": login_attempt_id,
         }))
         .await;

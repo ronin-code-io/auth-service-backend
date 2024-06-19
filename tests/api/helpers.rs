@@ -175,7 +175,11 @@ async fn configure_postgresql() -> (PgPool, String) {
 
     configure_database(postgresql_conn_url, &db_name).await;
 
-    let postgresql_conn_url_with_db = Secret::new(format!("{}/{}", postgresql_conn_url.expose_secret(), db_name));
+    let postgresql_conn_url_with_db = Secret::new(format!(
+        "{}/{}",
+        postgresql_conn_url.expose_secret(),
+        db_name
+    ));
 
     (
         get_postgres_pool(&postgresql_conn_url_with_db)

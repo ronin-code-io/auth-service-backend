@@ -1,6 +1,6 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
-use secrecy::Secret;
+use secrecy::{ExposeSecret as _, Secret};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -108,7 +108,7 @@ async fn handle_2fa(
         .email_client
         .read()
         .await
-        .send_email(email, "2FA code", code.as_ref())
+        .send_email(email, "2FA code", code.expose_secret())
         .await
     {
         return (jar, Err(AuthAPIError::UnexpectedError(e)));
@@ -116,7 +116,7 @@ async fn handle_2fa(
 
     let response = TwoFactorAuthResponse {
         message: "2FA required".to_owned(),
-        login_attempt_id: login_attempt_id.as_ref().to_owned(),
+        login_attempt_id: login_attempt_id.expose_secret().to_owned(),
     };
 
     (

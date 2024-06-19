@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use color_eyre::eyre::Context;
 use redis::{Commands, Connection};
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 
@@ -29,8 +29,8 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
         let key = get_key(&email);
 
         let store_code = serde_json::to_string(&TwoFATuple(
-            login_attempt_id.as_ref().to_owned(),
-            code.as_ref().to_owned(),
+            login_attempt_id.expose_secret().to_owned(),
+            code.expose_secret().to_owned(),
         ))
         .wrap_err("Failed to serialze 2FA tuple")
         .map_err(TwoFACodeStoreError::UnexpectedError)?;
@@ -71,11 +71,11 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
             .wrap_err("Failed to deserialize 2FA tuple.")
             .map_err(TwoFACodeStoreError::UnexpectedError)?;
 
-        let login_attempt_id = LoginAttemptId::parse(&code_tuple.0)
+        let login_attempt_id = LoginAttemptId::parse(Secret::new(code_tuple.0))
             .wrap_err("Failed to deserialize LoginAttemptId")
             .map_err(TwoFACodeStoreError::UnexpectedError)?;
 
-        let code = TwoFACode::parse(code_tuple.1)
+        let code = TwoFACode::parse(Secret::new(code_tuple.1))
             .wrap_err("Failed to deserialize 2FA Code")
             .map_err(TwoFACodeStoreError::UnexpectedError)?;
 
