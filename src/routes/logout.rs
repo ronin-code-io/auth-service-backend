@@ -30,12 +30,7 @@ pub async fn logout(
         return (jar, Err(AuthAPIError::InvalidToken));
     }
 
-    if let Err(e) = banned_token_store
-        .write()
-        .await
-        .add_token(token)
-        .await
-    {
+    if let Err(e) = banned_token_store.write().await.add_token(token).await {
         return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
     };
 

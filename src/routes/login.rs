@@ -1,5 +1,6 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
+use secrecy::Secret;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
 #[derive(Deserialize)]
 pub struct LoginRequest {
     pub email: String,
-    pub password: String,
+    pub password: Secret<String>,
 }
 
 #[derive(Serialize, Debug)]
@@ -35,7 +36,7 @@ pub async fn login(
     Json(request): Json<LoginRequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
     let email = Email::parse(&request.email);
-    let password = Password::parse(&request.password);
+    let password = Password::parse(request.password);
 
     if email.is_err() || password.is_err() {
         return (jar, Err(AuthAPIError::InvalidCredentials));

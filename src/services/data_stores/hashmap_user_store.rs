@@ -51,13 +51,16 @@ impl UserStore for HashMapUserStore {
 
 #[cfg(test)]
 mod tests {
+    use secrecy::Secret;
+
     use super::*;
 
     #[tokio::test]
     async fn should_add_user() {
         let mut user_service = HashMapUserStore::default();
         let email = Email::parse("user@example.com").expect("Should parse email");
-        let password = Password::parse("test-password").expect("Should parse password");
+        let password = Password::parse(Secret::new("test-password".to_owned()))
+            .expect("Should parse password");
 
         let user = User::new(email, password, false);
         user_service.add_user(user).await.expect("should add user");
@@ -69,7 +72,8 @@ mod tests {
     async fn should_fail_to_add_duplicated_user() {
         let mut user_service = HashMapUserStore::default();
         let email = Email::parse("user@example.com").expect("Should parse email");
-        let password = Password::parse("test-password").expect("Should parse password");
+        let password = Password::parse(Secret::new("test-password".to_owned()))
+            .expect("Should parse password");
         let user = User::new(email, password, false);
 
         user_service
@@ -86,7 +90,8 @@ mod tests {
     async fn should_return_user() {
         let mut user_service = HashMapUserStore::default();
         let email = Email::parse("user@example.com").expect("Should parse email");
-        let password = Password::parse("test-password").expect("Should parse password");
+        let password = Password::parse(Secret::new("test-password".to_owned()))
+            .expect("Should parse password");
         let user = User::new(email.clone(), password, false);
 
         user_service.add_user(user).await.expect("should add user");
@@ -109,7 +114,8 @@ mod tests {
     async fn should_validate_password() {
         let mut user_service = HashMapUserStore::default();
         let email = Email::parse("user@example.com").expect("Should parse email");
-        let password = Password::parse("test-password").expect("Should parse password");
+        let password = Password::parse(Secret::new("test-password".to_owned()))
+            .expect("Should parse password");
         let user = User::new(email.clone(), password.clone(), false);
 
         user_service.add_user(user).await.expect("should add user");
@@ -121,8 +127,10 @@ mod tests {
     async fn should_fail_to_validate_password() {
         let mut user_service = HashMapUserStore::default();
         let email = Email::parse("user@example.com").expect("Should parse email");
-        let password = Password::parse("test-password").expect("Should parse password");
-        let wrong_password = Password::parse("wrong-password").expect("Should parse password");
+        let password = Password::parse(Secret::new("test-password".to_owned()))
+            .expect("Should parse password");
+        let wrong_password = Password::parse(Secret::new("wrong-password".to_owned()))
+            .expect("Should parse password");
         let user = User::new(email.clone(), password, false);
 
         user_service.add_user(user).await.expect("should add user");
@@ -140,7 +148,8 @@ mod tests {
     async fn should_fail_to_validate_password_if_user_does_not_exists() {
         let user_service = HashMapUserStore::default();
         let email = Email::parse("user@example.com").expect("Should parse email");
-        let password = Password::parse("test-password").expect("Should parse password");
+        let password = Password::parse(Secret::new("test-password".to_owned()))
+            .expect("Should parse password");
 
         assert_eq!(
             user_service

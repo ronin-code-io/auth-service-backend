@@ -16,8 +16,7 @@ pub async fn delete_account(
     State(state): State<AppState>,
     Json(request): Json<DeleteAccountRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let email = Email::parse(&request.email)
-        .map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let email = Email::parse(&request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     let mut user_store = state.user_store.write().await;
 
