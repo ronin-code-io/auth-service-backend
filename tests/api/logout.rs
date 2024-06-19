@@ -75,7 +75,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     assert!(!auth_cookie.value().is_empty());
 
-    let token = auth_cookie.value();
+    let token = Secret::new(auth_cookie.value().to_owned());
 
     let response = app.post_logout().await;
 
@@ -92,7 +92,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     let contains_token = banned_token_store
         .write()
         .await
-        .contains_token(token)
+        .contains_token(&token)
         .await
         .expect("Failed to check if token is banned");
 

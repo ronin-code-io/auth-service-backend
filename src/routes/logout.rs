@@ -1,5 +1,6 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
 use axum_extra::extract::{cookie::Cookie, CookieJar};
+use secrecy::Secret;
 
 use crate::{
     app_state::AppState,
@@ -20,7 +21,7 @@ pub async fn logout(
     }
 
     let cookie = cookie.unwrap();
-    let token = cookie.value().to_owned();
+    let token = Secret::new(cookie.value().to_owned());
     let banned_token_store = state.banned_token_store;
 
     if validate_token(&token, banned_token_store.clone())

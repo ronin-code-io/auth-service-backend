@@ -1,7 +1,7 @@
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 
 use crate::app_state::BannedTokenStoreType;
@@ -62,10 +62,10 @@ fn create_token(claims: &Claims) -> Result<String> {
 }
 
 pub async fn validate_token(
-    token: &str,
+    token: &Secret<String>,
     banned_token_store: BannedTokenStoreType,
 ) -> Result<Claims> {
-    match banned_token_store.read().await.contains_token(token).await {
+    match banned_token_store.read().await.contains_token(&token).await {
         Ok(value) => {
             if value {
                 return Err(eyre!("Token is banned."));
@@ -74,7 +74,7 @@ pub async fn validate_token(
         Err(e) => return Err(e.into()),
     };
     decode::<Claims>(
-        token,
+        token.expose_secret().as_str(),
         &DecodingKey::from_secret(JWT_SECRET.expose_secret().as_bytes()),
         &Validation::default(),
     )
@@ -128,7 +128,7 @@ mod test {
         let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
         let token = generate_auth_token(&email).unwrap();
         let result = validate_token(
-            &token,
+            &Secret::new(token),
             Arc::new(RwLock::new(HashSetBannedTokenStore::default())),
         )
         .await
@@ -146,7 +146,7 @@ mod test {
     #[tokio::test]
     async fn test_validate_token_with_banned_token() {
         let email = Email::parse(Secret::new("test@example.com".to_owned())).unwrap();
-        let token = generate_auth_token(&email).unwrap();
+        let token = Secret::new(generate_auth_token(&email).unwrap());
         let mut banned_token_store = HashSetBannedTokenStore::default();
 
         banned_token_store
@@ -161,9 +161,8 @@ mod test {
 
     #[tokio::test]
     async fn test_validate_token_with_invalid_token() {
-        let token = "invalid_token".to_owned();
         let result = validate_token(
-            &token,
+            &Secret::new("invalid_token".to_owned()),
             Arc::new(RwLock::new(HashSetBannedTokenStore::default())),
         )
         .await;

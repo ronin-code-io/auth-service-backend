@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
 use color_eyre::eyre::{eyre, Result};
+use secrecy::{ExposeSecret, Secret};
 
 use crate::domain::{BannedTokenStore, BannedTokenStoreError};
 
@@ -11,8 +12,8 @@ pub struct HashSetBannedTokenStore {
 
 #[async_trait::async_trait]
 impl BannedTokenStore for HashSetBannedTokenStore {
-    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
-        match self.banned_tokens.insert(token) {
+    async fn add_token(&mut self, token: Secret<String>) -> Result<(), BannedTokenStoreError> {
+        match self.banned_tokens.insert(token.expose_secret().to_owned()) {
             true => Ok(()),
             false => Err(BannedTokenStoreError::UnexpectedError(eyre!(
                 "Failed to add token into hashset.".to_owned()
@@ -20,8 +21,10 @@ impl BannedTokenStore for HashSetBannedTokenStore {
         }
     }
 
-    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
-        Ok(self.banned_tokens.contains(token))
+    async fn contains_token(&self, token: &Secret<String>) -> Result<bool, BannedTokenStoreError> {
+        Ok(self
+            .banned_tokens
+            .contains(&token.expose_secret().to_owned()))
     }
 }
 
@@ -34,7 +37,7 @@ mod test {
         let banned_token_store = HashSetBannedTokenStore::default();
 
         let result = banned_token_store
-            .contains_token("Unknown")
+            .contains_token(&Secret::new("Unknown".to_owned()))
             .await
             .expect("Could not check banned token");
 
@@ -43,7 +46,7 @@ mod test {
 
     #[tokio::test]
     async fn should_add_token() {
-        let token = "Known".to_owned();
+        let token = Secret::new("Known".to_owned());
         let mut banned_token_store = HashSetBannedTokenStore::default();
 
         assert!(banned_token_store.add_token(token.clone()).await.is_ok());
