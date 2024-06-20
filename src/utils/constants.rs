@@ -104,8 +104,8 @@ pub mod prod {
     pub mod email_client {
         use std::time::Duration;
 
-        pub const BASE_URL: &str = "http://api.postmarkapp.com/email";
-        pub const SENDER: &str = "bogdan@codeiron.io";
+        pub const BASE_URL: &str = "https://api.postmarkapp.com";
+        pub const SENDER: &str = "mateusz.placzek@bushidogames.com";
         pub const TIMEOUT: Duration = std::time::Duration::from_secs(10);
     }
 }

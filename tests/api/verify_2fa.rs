@@ -5,6 +5,10 @@ use auth_service::{
 use secrecy::{ExposeSecret, Secret};
 use serde_json::json;
 use uuid::Uuid;
+use wiremock::{
+    matchers::{method, path},
+    Mock, ResponseTemplate,
+};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
@@ -104,6 +108,13 @@ async fn should_return_401_if_incorrect_credentials() {
 
     assert_eq!(response.status().as_u16(), 201, "Failed to sign up user.");
 
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
     let response = app
         .post_login(&json!({
             "email": email,
@@ -185,6 +196,13 @@ async fn should_return_401_if_old_code() {
 
     assert_eq!(response.status().as_u16(), 201, "Failed to sign up user.");
 
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(2)
+        .mount(&app.email_server)
+        .await;
+
     let response = app
         .post_login(&json!({
             "email": email,
@@ -255,6 +273,13 @@ async fn should_return_200_if_correct_code() {
 
     assert_eq!(response.status().as_u16(), 201);
 
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
+
     let login_attempt_id = app
         .post_login(&json!({
             "email": email,
@@ -311,6 +336,13 @@ async fn should_return_401_if_correct_code_used_twice() {
         .await;
 
     assert_eq!(response.status().as_u16(), 201);
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     let login_attempt_id = app
         .post_login(&json!({

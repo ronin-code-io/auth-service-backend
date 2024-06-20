@@ -55,6 +55,8 @@ impl EmailClient for PostmarkEmailClient {
                 POSTMARK_AUTH_HEADER,
                 self.authorization_token.expose_secret(),
             )
+            .header("Content-Type", "application/json")
+            .header("Accept", "application/json")
             .json(&request_body);
 
         request.send().await?.error_for_status()?;
@@ -63,7 +65,7 @@ impl EmailClient for PostmarkEmailClient {
     }
 }
 
-const MESSAGE_STREAM: &str = "outbound";
+const MESSAGE_STREAM: &str = "outbound-1";
 const POSTMARK_AUTH_HEADER: &str = "X-Postmark-Server-Token";
 
 #[derive(serde::Serialize, Debug)]
