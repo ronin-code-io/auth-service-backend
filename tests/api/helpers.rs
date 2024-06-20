@@ -27,7 +27,7 @@ pub struct TestApp {
     pub banned_token_store: Arc<RwLock<dyn BannedTokenStore>>,
     pub two_fa_code_store: Arc<RwLock<dyn TwoFACodeStore>>,
     #[allow(dead_code)]
-    pub email_client: Arc<RwLock<dyn EmailClient>>,
+    pub email_client: Arc<dyn EmailClient>,
     pub clean_up_called: bool,
 }
 
@@ -49,7 +49,7 @@ impl TestApp {
         let banned_token_store =
             Arc::new(RwLock::new(RedisBannedTokenStore::new(redis_connection)));
         let two_fa_code_store = Arc::new(RwLock::new(HashMapTwoFACodeStore::default()));
-        let email_client = Arc::new(RwLock::new(MockEmailClient {}));
+        let email_client = Arc::new(MockEmailClient {});
 
         let app_state = AppState::new(
             user_store,

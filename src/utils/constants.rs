@@ -10,6 +10,7 @@ lazy_static! {
     pub static ref DATABASE_URL: Secret<String> = set_database_url();
     pub static ref REDIS_HOSTNAME: String = set_redis_hostname();
     pub static ref REDIS_PORT: u32 = set_redis_port();
+    pub static ref POSTMARK_AUTH_TOKEN: Secret<String> = set_postmark_auth_token();
 }
 
 fn load_env_file() {
@@ -62,6 +63,18 @@ fn set_database_url() -> Secret<String> {
     }))
 }
 
+fn set_postmark_auth_token() -> Secret<String> {
+    load_env_file();
+    Secret::new(
+        std_env::var(env::POSTMARK_AUTH_TOKEN_ENV_VAR).unwrap_or_else(|_| {
+            panic!(
+                "{} environment variable must be set.",
+                env::POSTMARK_AUTH_TOKEN_ENV_VAR
+            )
+        }),
+    )
+}
+
 fn set_redis_hostname() -> String {
     load_env_file();
     std_env::var(env::REDIS_HOSTNAME_ENV_VAR).unwrap_or(env::DEFAULT_REDIS_HOSTNAME.to_owned())
@@ -83,14 +96,28 @@ pub mod env {
     pub const REDIS_PORT_ENV_VAR: &str = "REDIS_PORT";
     pub const DEFAULT_REDIS_HOSTNAME: &str = "127.0.0.1";
     pub const DEFAULT_REDIS_PORT: u32 = 6379;
+    pub const POSTMARK_AUTH_TOKEN_ENV_VAR: &str = "POSTMARK_AUTH_TOKEN";
 }
 
 pub mod prod {
     pub const APP_ADDRESS: &str = "0.0.0.0:3000";
+    pub mod email_client {
+        use std::time::Duration;
+
+        pub const BASE_URL: &str = "http://api.postmarkapp.com/email";
+        pub const SENDER: &str = "bogdan@codeiron.io";
+        pub const TIMEOUT: Duration = std::time::Duration::from_secs(10);
+    }
 }
 
 pub mod test {
     pub const APP_ADDRESS: &str = "127.0.0.1:0";
+    pub mod email_client {
+        use std::time::Duration;
+
+        pub const SENDER: &str = "test@email.com";
+        pub const TIMEOUT: Duration = std::time::Duration::from_millis(200);
+    }
 }
 
 pub const JWT_COOKIE_NAME: &str = "jwt";
